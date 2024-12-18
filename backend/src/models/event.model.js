@@ -8,7 +8,6 @@ import mongoose, { Schema } from "mongoose";
  * - groupLimit: The maximum number of groups that can participate.
  * - startDate: The event's start date, which must be in the future.
  * - endDate: The event's end date, which must be after the start date.
- * - groupList: An array of participating groups (references to the Group model).
  * - location: The location where the event will be held.
  * - category: The event's category.
  * - creator: The organization that created the event (references to the Org model).
@@ -62,12 +61,6 @@ const event = new Schema({
             message: 'Event:: End date and time must be after the start date and time'
         }
     },
-    groupList: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: "Group"
-        }
-    ],
     location: {
         type: String,
         lowercase: true,

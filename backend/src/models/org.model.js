@@ -2,7 +2,6 @@ import mongoose, { Schema } from "mongoose";
 
 /**
  * Org Schema:
- * - eventList: An array of events associated with the organization (references to the Event model).
  * - name: The name of the organization.
  * - email: The email address of the organization, validated with a regex pattern.
  * - avatar: The image URL representing the organization's avatar. (later Include Default Avatar)
@@ -10,12 +9,6 @@ import mongoose, { Schema } from "mongoose";
  */
 
 const org = new Schema({
-    eventList: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: "Event"
-        }
-    ],
     name: {
         type: String,
         required: true,
