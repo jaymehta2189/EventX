@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+const {Schema,model,mongoose}=require("mongoose")
 
 /**
  * Event Schema:
@@ -96,4 +96,5 @@ const event = new Schema({
     }
 });
 
-export const Event = mongoose.model("Event", event);
+ const Event = mongoose.model("Event", event);
+module.exports=Event;

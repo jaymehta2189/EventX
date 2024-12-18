@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+const {Schema,model,mongoose}=require("mongoose")
 
 /**
  * Org Schema:
@@ -42,4 +42,5 @@ const org = new Schema({
     }
 });
 
-export const Org = mongoose.model("Org", org);
+ const Org = mongoose.model("Org", org);
+ module.exports=Org;
