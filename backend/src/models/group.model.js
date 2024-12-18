@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+const {Schema,model,mongoose}=require("mongoose")
 
 /**
  * Group Schema:
@@ -39,4 +39,5 @@ const group = new Schema({
     }
 });
 
-export const Group = mongoose.model("Group", group);
+ const Group = mongoose.model("Group", group);
+ module.exports=Group;

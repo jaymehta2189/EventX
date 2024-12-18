@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
-
-
+const {Schema,model,mongoose}=require("mongoose")
+const tokendetails=require("../service/authentication")
+const { createHmac, randomBytes } = require("crypto");
 /**
  * User Schema:
  * - name: The name of the user.
@@ -33,15 +33,49 @@ const user = new Schema({
     },
     avatar: {
         type: String,
-        required: true
+        required: false,
+        default:"../public/images"
         // Include Default Avatar
+    },
+    salt:{
+        type:String
     },
     password: {
         type: String,
         required: [true, 'User:: Password is required'],
         minlength: 8 // Enforce password length
     }
+},{
+    timestamps:true
 });
 
+user.pre("save",function (next){
+    const user=this;
+    if(!user.isModified("password"))return;
+    const salt=randomBytes(16).toString();
+    
+    const hashpassword = createHmac('sha256', salt)
+               .update(user.password)
+               .digest('hex');
+    console.log(hashpassword);
+    this.salt=salt;
+    this.password=hashpassword;
+    next();
+})
+user.static("matchPasswordAndGenerateToken",async function(email,password){
+    const user=await this.findOne({email});
+    if(!user)return false;
+    const salt=user.salt;
+    const originalpassword=user.password;
+    const userPass=createHmac("sha256",salt).update(password).digest("hex");
+    if(originalpassword!==userPass){
+        throw new Error("Incorrect Password")
+    }
+    const token=tokendetails.createTokenForUser(user)
+    console.log("token"+token);
+    return token;
+})
 
-export const User = mongoose.model("User", user);
+
+const User = mongoose.model("User", user);
+module.exports=User;
