@@ -1,4 +1,6 @@
-const User=require("../models/user.model");
+const User=require("../models/user.model.js");
+const ApiError = require("../utils/ApiError");
+const ApiResponse = require("../utils/ApiResponse");
 
 exports.signupPost=async (req,res)=>{
 
@@ -9,9 +11,13 @@ exports.signupPost=async (req,res)=>{
         email,
         password
     });
-    console.log("user Created")
-    res.send("created")
+
+    console.log("user Created");
+
+    return res.status(201).json(new ApiResponse(201,"User Created"));
+    
 }
+
 exports.signinPost=async (req,res)=>{
     const {email,password}=req.body;
     try{   
@@ -19,11 +25,10 @@ exports.signinPost=async (req,res)=>{
         
         return res.cookie("token",token).redirect("/");
     }catch(error){
-       return res.render("signin",{
-           error:"Incorrect Email or Password"
-       })
+
+       return res.status(400).json(new ApiError(400,error.message));
     }
 }
 exports.logout=(req,res)=>{
-    res.clearCookie("token").redirect("/")
+    res.clearCookie("token").redirect("/");
  }

@@ -1,6 +1,8 @@
 const {Schema,model,mongoose}=require("mongoose")
-const tokendetails=require("../service/authentication")
+const tokendetails=require("../service/token.js")
 const { createHmac, randomBytes } = require("crypto");
+const ApiError = require("../utils/ApiError.js");
+const ApiResponse = require("../utils/ApiResponse.js");
 /**
  * User Schema:
  * - name: The name of the user.
@@ -34,7 +36,7 @@ const user = new Schema({
     avatar: {
         type: String,
         required: false,
-        default:"../public/images"
+        default:"../../public/images/profile.png"
         // Include Default Avatar
     },
     salt:{
@@ -61,20 +63,23 @@ user.pre("save",function (next){
     this.salt=salt;
     this.password=hashpassword;
     next();
-})
+});
 user.static("matchPasswordAndGenerateToken",async function(email,password){
     const user=await this.findOne({email});
-    if(!user)return false;
+    if(!user)
+        return false;
+
     const salt=user.salt;
     const originalpassword=user.password;
     const userPass=createHmac("sha256",salt).update(password).digest("hex");
+
     if(originalpassword!==userPass){
-        throw new Error("Incorrect Password")
+        throw new ApiError(401,"Password Not Valied");
     }
-    const token=tokendetails.createTokenForUser(user)
-    console.log("token"+token);
+
+    const token=tokendetails.createTokenForUser(user);
     return token;
-})
+});
 
 
 const User = mongoose.model("User", user);
