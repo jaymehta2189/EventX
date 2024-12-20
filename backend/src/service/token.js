@@ -1,16 +1,16 @@
 require("dotenv").config();
 const jwt=require("jsonwebtoken");
 
-const secretKey=process.env.SecretKey;
+const secretKey=process.env.SECRET_KEY;
 
-exports.createTokenForUser=(user)=>{
-    return jwt.sign({
+exports.createTokenForUser= (user)=>{
+    return  jwt.sign({
         _id:user._id,
         email:user.email,
         avatar:user.avatar,
     }
     ,secretKey);
 }
-exports.verifyToken=(token)=>{
-    return jwt.verify(token,secretKey);
+exports.verifyToken= (token)=>{
+    return  jwt.verify(token,secretKey);
 }
