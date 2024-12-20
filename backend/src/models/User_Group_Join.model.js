@@ -1,4 +1,4 @@
-import mongoose ,{Schema} from "mongoose";
+const {Schema,model,mongoose}=require("mongoose")
 
 const user_group_join = new Schema({
     Group:{
@@ -11,4 +11,5 @@ const user_group_join = new Schema({
     }
 });
 
-export const User_Group_Join = mongoose.model("User_Group_Join",user_group_join);
+const User_Group_Join = mongoose.model("User_Group_Join",user_group_join);
+module.exports=User_Group_Join;
