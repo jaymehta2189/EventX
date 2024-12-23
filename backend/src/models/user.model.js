@@ -37,7 +37,6 @@ const user = new Schema({
         type: String,
         required: false,
         default:"../../public/images/profile.png"
-        // Include Default Avatar
     },
     salt:{
         type:String
@@ -45,7 +44,7 @@ const user = new Schema({
     password: {
         type: String,
         required: [true, 'User:: Password is required'],
-        minlength: 8 // Enforce password length
+        minlength: 8 
     }
 },{
     timestamps:true

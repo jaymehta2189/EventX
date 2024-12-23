@@ -3,11 +3,13 @@ const {Schema,model,mongoose}=require("mongoose")
 const user_group_join = new Schema({
     Group:{
         type: Schema.Types.ObjectId,
-        ref:"Group"
+        ref:"Group",
+        required:true
     },
     Member:{
         type:Schema.Types.ObjectId,
-        ref:"User"
+        ref:"User",
+        required:true
     }
 });
 

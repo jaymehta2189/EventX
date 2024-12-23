@@ -30,6 +30,37 @@ const otpGenerator = require("otp-generator");
 // }
 // );
 
+exports.getUsersByEmails = async({emails , fields = null })=> {
+
+    if(!emails || !Array.isArray(emails) || emails.length === 0){
+        throw new ApiError(400, "Please provide valid emails");
+    }
+
+    const users = await User.find({ email: { $in: emails } }).select(fields);
+
+    if (users.length !== emails.length) {
+        const foundEmails = users.map((u) => u.email);
+        const missingEmails = emails.filter((email) => !foundEmails.includes(email));
+        throw new ApiError(400, `Missing users for emails: ${missingEmails.join(", ")}`);
+    }
+
+    return users;
+};
+
+exports.getUserByEmail = async({email , fields = null})=>{
+    
+    if(!email || typeof email !== "string"){
+        throw new ApiError(400, "Please provide valid email");
+    }
+
+    const user = await User.findOne({email}).select(fields);
+
+    if(!user){
+        throw new ApiError(400, "User not found with this email");
+    }
+    return user;
+};
+
 exports.signinPost = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -72,7 +103,6 @@ exports.signupPost = asyncHandler(async (req, res) => {
         otp,
     } = req.body;
 
-    // Check if All Details are there or not
     if (!name || !email || !password || !otp) {
         throw new ApiError(400, "Please provide all the details");
     }
@@ -83,7 +113,7 @@ exports.signupPost = asyncHandler(async (req, res) => {
     }
 
     const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-    console.log(response);
+    
     if (response.length === 0 || otp !== response[0].otp) {
         throw new ApiError(400, "The OTP is not valid");
     }
@@ -98,6 +128,6 @@ exports.signupPost = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid User Data");
     }
 
-    return res.status(201).json(new ApiResponse(201, {email,name}, "User Created"));
+    return res.status(201).json(new ApiResponse(201, {email,name} , "User Created"));
 });
 

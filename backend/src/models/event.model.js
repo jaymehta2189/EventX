@@ -1,4 +1,7 @@
-const {Schema,model,mongoose}=require("mongoose")
+const {Schema,model,mongoose}=require("mongoose");
+const { create } = require("./otp.model");
+const Group = require("./group.model");
+const User_Group_Join = require("./User_Group_Join.model");
 
 /**
  * Event Schema:
@@ -15,17 +18,20 @@ const {Schema,model,mongoose}=require("mongoose")
  * - pricePool: The prize pool for the event, must be a positive number.
  */
 
+/* This code snippet is defining a Mongoose schema for an "Event" model. Let's break down what each
+property in the schema represents: */
 const event = new Schema({
     name: {
         type: String,
         required: true,
         lowercase: true,
         trim: true,
-        index: true
+        index: true,
+        unique: true
     },
     avatar: {
-        type: String,
-        required: true
+        type: String
+        // required: true
     },
     description: {
         type: String,
@@ -76,7 +82,8 @@ const event = new Schema({
     },
     creator: {
         type: Schema.Types.ObjectId,
-        ref: "Org"
+        ref: "Org",
+        required: true
     },
     winnerGroup:{
         type: Schema.Types.ObjectId,
@@ -94,7 +101,30 @@ const event = new Schema({
             message: 'Event:: {VALUE} is not a valid prize pool amount'
         }
     }
+    // ,deleteAt: {
+    //     type: Date,
+    //     default: function () {
+    //         return new Date(this.endDate.getTime() + 2 * 24 * 60 * 60 * 1000); // Default: 2 days after `endDate`
+    //     },
+    //     required: false
+    // }
 });
+
+// event.index({ deleteAt: 1 }, { expireAfterSeconds: 0 });
+
+// event.pre("deleteOne", { document: true, query: false }, async function (next) {
+//     try {
+//         const groupIds = await Group.find({ eventId: this._id }).select("_id");
+//         // Delete related UserGroups
+//         await User_Group_Join.deleteMany({ groupId: { $in: groupIds } });
+
+//         await Group.deleteMany({ eventId: this._id });
+
+//         next();
+//     } catch (error) {
+//         next(error); // Pass error to the next middleware
+//     }
+// });
 
 const Event = mongoose.model("Event", event);
 module.exports=Event;

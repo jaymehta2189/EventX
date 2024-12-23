@@ -32,8 +32,7 @@ const org = new Schema({
     },
     avatar: {
         type: String,
-        required: true
-        // Include Default Avatar
+        // required: true
     },
     password: {
         type: String,

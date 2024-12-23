@@ -27,7 +27,7 @@ const group = new Schema({
     },
     groupLeader: {
         type: Schema.Types.ObjectId,
-        ref: "User"
+        ref: "User",
     },
     qrCode:{
         type:String,
@@ -35,8 +35,16 @@ const group = new Schema({
     },
     event: {
         type: Schema.Types.ObjectId,
-        ref: "Event"
+        ref: "Event",
+        required: true
     }
+});
+
+group.pre('save', async function (next) {
+    // Logic to generate QR code
+    console.log("Generating QR code for group");
+    this.qrCode = "hello" || GenrateQRCode(this._id);
+    next();
 });
 
  const Group = mongoose.model("Group", group);
