@@ -15,16 +15,15 @@ const group = new Schema({
     name: {
         type: String,
         required: true,
-        lowercase: true,
         trim: true,
         index: true
     },
     score: {
         type: Number,
-        default: 0, // Default score value
+        default: 0,
         min: [0, 'Score must be a positive number'],
         max: [100, 'Score cannot exceed 100'],
-        required: true //optional
+        required: true
     },
     groupLeader: {
         type: Schema.Types.ObjectId,
@@ -36,7 +35,13 @@ const group = new Schema({
     event: {
         type: Schema.Types.ObjectId,
         ref: "Event",
-        required: true
+        required: true,
+        index: true
+    },
+    timeLimit:{
+        type:Date,
+        required:true,
+        expires: 2 * 24 * 60 * 60 * 1000
     }
 });
 

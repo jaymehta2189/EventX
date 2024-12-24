@@ -26,8 +26,8 @@ const event = new Schema({
         required: true,
         lowercase: true,
         trim: true,
-        index: true,
-        unique: true
+        unique: true,
+        index: true
     },
     avatar: {
         type: String
@@ -50,6 +50,7 @@ const event = new Schema({
     startDate: {
         type: Date,
         required: true,
+        index: true,
         validate: {
             validator: function (value) {
                 return value > Date.now();
@@ -100,26 +101,17 @@ const event = new Schema({
             },
             message: 'Event:: {VALUE} is not a valid prize pool amount'
         }
+    },
+    timeLimit:{
+        type:Date,
+        required:true,
+        expires: 2 * 24 * 60 * 60 * 1000
     }
-    // ,deleteAt: {
-    //     type: Date,
-    //     default: function () {
-    //         return new Date(this.endDate.getTime() + 2 * 24 * 60 * 60 * 1000); // Default: 2 days after `endDate`
-    //     },
-    //     required: false
-    // }
 });
 
-// event.index({ deleteAt: 1 }, { expireAfterSeconds: 0 });
-
-// event.pre("deleteOne", { document: true, query: false }, async function (next) {
+// event.pre('save', async function (next) {
 //     try {
-//         const groupIds = await Group.find({ eventId: this._id }).select("_id");
-//         // Delete related UserGroups
-//         await User_Group_Join.deleteMany({ groupId: { $in: groupIds } });
-
-//         await Group.deleteMany({ eventId: this._id });
-
+//         this.timeLimit=new Date(this.endDate.getTime() + 2 * 24 * 60 * 60 * 1000);
 //         next();
 //     } catch (error) {
 //         next(error); // Pass error to the next middleware

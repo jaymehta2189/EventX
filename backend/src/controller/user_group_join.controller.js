@@ -3,11 +3,17 @@ const ApiResponse = require("../utils/ApiResponse");
 const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 const User_Group_Join = require("../models/User_Group_Join.model");
+const User = require("../models/user.model");
 
 exports.GetUserJoinGroups = async (userId) => {
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
         throw new ApiError(400, "Invalid User ID");
     }
+
+    if(await User.findById(userId).select("_id") === null){
+        throw new ApiError(404, "User not found");
+    }
+    
     const pipeline = [
         {
             $match: { Member: new mongoose.Types.ObjectId(userId) }
@@ -51,6 +57,9 @@ exports.getUserJoinEvents = async (userId) => {
         throw new Error("Invalid User ID");
     }
 
+    if(await User.findById(userId).select("_id") === null){
+        throw new ApiError(404, "User not found");
+    }
     const pipeline = [
         {
             $match: { Member: new mongoose.Types.ObjectId(userId) }
@@ -107,13 +116,13 @@ exports.getUserJoinEvents = async (userId) => {
 };
 
 exports.getUserGroups = asyncHandler(async (req, res) => {
-    const userId = req.params.userId;
+    const {userId} = req.body;
     const data = await this.GetUserJoinGroups(userId);
     return res.status(200).json(new ApiResponse(200, data, "User Groups Retrieved Successfully"));
 });
 
 exports.getUserEvents = asyncHandler(async (req, res) => {
-    const userId = req.params.userId;
+    const {userId} = req.body;
     const data = await this.getUserJoinEvents(userId);
     return res.status(200).json(new ApiResponse(200, data, "User Events Retrieved Successfully"));
 });
