@@ -13,8 +13,7 @@ const org = new Schema({
         type: String,
         required: true,
         lowercase: true,
-        trim: true,
-        index: true
+        trim: true
     },
     email: {
         type: String,
@@ -41,5 +40,5 @@ const org = new Schema({
     }
 });
 
- const Org = mongoose.model("Org", org);
- module.exports=Org;
+const Org = mongoose.model("Org", org);
+module.exports=Org;
