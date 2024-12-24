@@ -1,6 +1,6 @@
 const {Schema,model,mongoose}=require("mongoose");
 const { create } = require("./otp.model");
-const Group = require("./group.model");
+
 const User_Group_Join = require("./User_Group_Join.model");
 
 /**
@@ -83,7 +83,7 @@ const event = new Schema({
     },
     creator: {
         type: Schema.Types.ObjectId,
-        ref: "Org",
+        ref: "user",
         required: true
     },
     winnerGroup:{

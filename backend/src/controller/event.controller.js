@@ -1,5 +1,4 @@
 const Event = require("../models/event.model");
-const orgController = require("./org.controller");
 const ApiError = require("../utils/ApiError");
 const ApiResponse = require("../utils/ApiResponse");
 const asyncHandler = require("../utils/asyncHandler");
@@ -20,14 +19,18 @@ exports.findAllEventsByOrgId = async function(orgId , fields = null) {
 };
 
 exports.createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, location, category, pricePool, description , creator , groupLimit } = req.body;
+    const { name, startDate, endDate, location, category, pricePool, description , groupLimit } = req.body;
 
     if(!name || !startDate || !endDate || !location || !category || !pricePool || !description || !groupLimit ){
         throw new ApiError(400, "Please provide all required fields");
     }
     // const orgcreator =await orgController.validateOrgId({orgId:creator ,fields:"_id"});
-    await orgController.validateOrgId({orgId:creator ,fields:"_id"});
-
+    // await orgController.validateOrgId({orgId:creator ,fields:"_id"});
+    const creator = req.user._id;
+    if(req.user.role !== "org"){
+        throw new ApiError(403, "You are not authorized to create an event");
+    }
+    
     const existEvent = await Event.findOne({ name }).select("_id");
 
     if (existEvent) {
