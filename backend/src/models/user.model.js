@@ -16,8 +16,7 @@ const user = new Schema({
         type: String,
         required: true,
         lowercase: true,
-        trim: true,
-        index: true
+        trim: true
     },
     email: {
         type: String,
@@ -46,8 +45,6 @@ const user = new Schema({
         required: [true, 'User:: Password is required'],
         minlength: 8 
     }
-},{
-    timestamps:true
 });
 
 user.pre("save",function (next){

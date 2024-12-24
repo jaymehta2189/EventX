@@ -1,4 +1,5 @@
 const {Schema,model,mongoose}=require("mongoose")
+const { generateQRAndSaveAtCloudinary } = require("../utils/generateQR");
 
 /**
  * Group Schema:
@@ -14,36 +15,39 @@ const group = new Schema({
     name: {
         type: String,
         required: true,
-        lowercase: true,
         trim: true,
         index: true
     },
     score: {
         type: Number,
-        default: 0, // Default score value
+        default: 0,
         min: [0, 'Score must be a positive number'],
         max: [100, 'Score cannot exceed 100'],
-        required: true //optional
+        required: true
     },
     groupLeader: {
         type: Schema.Types.ObjectId,
         ref: "User",
     },
     qrCode:{
-        type:String,
-        required: true
+        type:String
     },
     event: {
         type: Schema.Types.ObjectId,
         ref: "Event",
-        required: true
+        required: true,
+        index: true
+    },
+    timeLimit:{
+        type:Date,
+        required:true,
+        expires: 2 * 24 * 60 * 60 * 1000
     }
 });
 
 group.pre('save', async function (next) {
     // Logic to generate QR code
-    console.log("Generating QR code for group");
-    this.qrCode = "hello" || GenrateQRCode(this._id);
+    this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/group/qr/${this._id}`);
     next();
 });
 

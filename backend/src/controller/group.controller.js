@@ -4,62 +4,85 @@ const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 const Group = require("../models/group.model");
 const User = require("../models/user.model");
+const Event = require("../models/event.model");
 const UserController = require("./user.controller");
 const User_Group_Join = require("../models/User_Group_Join.model");
+const { generateQRAndSaveAtCloudinary } = require("../utils/generateQR");
 
-
-exports.validateGroupNameInEvent = async(eventId, groupName) => {
-   
-    if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
-        throw new ApiError(400, "Please provide valid Event ID");
-    }
+exports.validateGroupNameInEvent = async (eventId, groupName) => {
 
     if (!groupName || typeof groupName !== "string") {
         throw new ApiError(400, "Please provide a valid group name");
     }
 
-    const existSameNameGroupInEvent = await Group.findOne({event:eventId,name:groupName}).select("name");
+    const existSameNameGroupInEvent = await Group.aggregate([
+        { $match: { event: new mongoose.Types.ObjectId(eventId), name: groupName.trim() } },
+        { $project: { name: 1 } }
+    ]).exec();
 
-    if (existSameNameGroupInEvent) {
+    if (existSameNameGroupInEvent.length > 0) {
         throw new ApiError(400, `Group with name ${groupName} already exists for the event`);
     }
 };
 
 exports.createGroup = asyncHandler(async (req, res) => {
+
     // event is the event ID
     const { name, groupLeaderEmailId, event, MemberEmailIds } = req.body;
 
-    const groupLeader = await UserController.getUserByEmail({ email: groupLeaderEmailId ,fields:"_id"});
-    
+    if (!event || !mongoose.Types.ObjectId.isValid(event)) {
+        throw new ApiError(400, "Please provide valid Event ID");
+    }
+
+    const EventTimeLimit = await Event.findById(event).select("timeLimit");
+
+    if (!EventTimeLimit) {
+        throw new ApiError(404, "Event not found");
+    }
+
+    const groupLeader = await UserController.getUserByEmail({ email: groupLeaderEmailId, fields: "_id" });
+
     await this.validateGroupNameInEvent(event, name);
 
-    const validMemberEmails = await UserController.getUsersByEmails({ emails:MemberEmailIds , fields:"_id"});
+    const validMemberEmails = await UserController.getUsersByEmails({ emails: MemberEmailIds, fields: "_id" });
+
+    const session = await mongoose.startSession();
+    
+    session.startTransaction();
 
     try {
 
+        const timeLimit = EventTimeLimit.timeLimit;
         const group = await Group.create({
             name,
             groupLeader: groupLeader._id,
             event,
-            qrCode:"hello" // <--- change this with Qr code generation
+            timeLimit
         });
 
         if (!group) {
             throw new ApiError(500, "Group creation failed");
         }
 
-        const userGroupJoinPromises = validMemberEmails.map(async (member) => {
-            return User_Group_Join.create({
-                Group: group._id,
-                Member: member._id
-            });
-        });
+        const userGroupJoinOperations = validMemberEmails.map(member => ({
+            insertOne: {
+                document: {
+                    Group: group._id,
+                    Member: member._id,
+                    timeLimit
+                }
+            }
+        }));
 
-        await Promise.all(userGroupJoinPromises);
+        await User_Group_Join.bulkWrite(userGroupJoinOperations);
 
+        await session.commitTransaction();
         return res.status(201).json(new ApiResponse(201, { id: group._id }, "Group Created Successfully"));
 
     } catch (error) {
+        await session.abortTransaction();
         throw new ApiError(500, error.message);
+    } finally {
+        session.endSession();
     }
 });

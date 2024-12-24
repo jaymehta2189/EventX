@@ -28,7 +28,16 @@ exports.createEvent = asyncHandler(async (req, res) => {
     // const orgcreator =await orgController.validateOrgId({orgId:creator ,fields:"_id"});
     await orgController.validateOrgId({orgId:creator ,fields:"_id"});
 
+    const existEvent = await Event.findOne({ name }).select("_id");
+
+    if (existEvent) {
+        throw new ApiError(400, "Event name already exists");
+    }
+
     try {
+
+        const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
+
         const event = await Event.create({
             name,
             startDate,
@@ -38,13 +47,15 @@ exports.createEvent = asyncHandler(async (req, res) => {
             pricePool,
             groupLimit,
             description,
-            creator//orgcreator._id
+            creator,
+            timeLimit
         });
 
         return res.status(201).json(new ApiResponse(201, event, "Event created successfully"));
     
     } catch (error) {
         if (error.name === "ValidationError") {
+            console.log("validation error");
             throw new ApiError(400, error.message); // Catch validation errors
         }
         throw new ApiError(500, "An error occurred while creating the event"); // Catch other errors
