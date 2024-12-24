@@ -1,19 +1,23 @@
-require("dotenv").config();
-const { verifyToken } = require("../service/authentication");
-
-exports.checkForAuth=(cookieName)=>{
-    return (req,res,next)=>{
-        const cookietoken = req.cookies[cookieName] || req.header("Authorization")?.replace("Bearer ","");
-        if(!cookietoken){
-            throw new ApiError(401,"Unauthorization request");
-            // return next();//important
-        }
-        try{
-            const payload=verifyToken(cookietoken);
-            req.person=payload;
-        }catch(error){
-            throw new ApiError(401,error?.massage || "Invalied Access Token");
-        }
-       return  next();
+const { verifyToken } = require("../service/token");
+function checkForAuth(req, res, next) {
+    const cookieName = "token";
+    const cookietoken = req.cookies[cookieName] || req.header("Authorization")?.replace("Bearer ","");
+    console.log("Token received:", cookietoken);
+    if (!cookietoken) {
+        return res.status(401).json({
+            msg: "Unauthorization request"
+        });
+    }
+    const decodedValue = verifyToken(cookietoken);
+    console.log("Decoded token:", decodedValue);
+    if (decodedValue) {
+        req.user = decodedValue;
+        next();
+    } else {
+        return res.status(403).json({
+            msg: "You are not authenticated"
+        });
     }
 }
+
+module.exports = checkForAuth;

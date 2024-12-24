@@ -100,10 +100,11 @@ exports.signupPost = asyncHandler(async (req, res) => {
         name,
         email,
         password,
+        role,
         otp,
     } = req.body;
 
-    if (!name || !email || !password || !otp) {
+    if (!name || !email || !password || !otp|| !role) {
         throw new ApiError(400, "Please provide all the details");
     }
 
@@ -121,13 +122,14 @@ exports.signupPost = asyncHandler(async (req, res) => {
     const user = await User.create({
         name,
         email,
-        password
+        password,
+        role
     });
 
     if (!user) {
         throw new ApiError(400, "Invalid User Data");
     }
 
-    return res.status(201).json(new ApiResponse(201, {email,name} , "User Created"));
+    return res.status(201).json(new ApiResponse(201, {email,name,role} , "User Created"));
 });
 

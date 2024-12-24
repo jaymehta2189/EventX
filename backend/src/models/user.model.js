@@ -3,6 +3,7 @@ const tokendetails=require("../service/token.js")
 const { createHmac, randomBytes } = require("crypto");
 const ApiError = require("../utils/ApiError.js");
 const ApiResponse = require("../utils/ApiResponse.js");
+const { type } = require("os");
 /**
  * User Schema:
  * - name: The name of the user.
@@ -40,6 +41,12 @@ const user = new Schema({
     salt:{
         type:String
     },
+    role:{
+        type:String,
+        required:true,
+        default:"user",
+        enum:["user","admin","org"]
+    },
     password: {
         type: String,
         required: [true, 'User:: Password is required'],
@@ -73,10 +80,15 @@ user.static("matchPasswordAndGenerateToken",async function(email,password){
         throw new ApiError(401,"Password Not Valied");
     }
 
-    const token=tokendetails.createTokenForPerson(user);
+    const token=tokendetails.createTokenForUser(user);
     return token;
 });
 
+
+// // Static method to find role and ID
+// user.static("findRoleAndId", async function (filter) {
+//     return this.find(filter).select("_id role").lean();
+// });
 
 const User = mongoose.model("User", user);
 module.exports=User;

@@ -15,15 +15,18 @@ const UserRouter = require("./routes/user.route.js");
 const EventRouter = require("./routes/event.route.js");
 const GroupRouter = require("./routes/group.route.js");
 const UserGroupJoinRouter = require("./routes/user_group_join.route.js");
-const OrgRouter = require("./routes/org.route.js");
-const { checkForAuth } = require("./middleware/authentication.js");
+// const OrgRouter = require("./routes/org.route.js");
+// const au= require("./middleware/authentication.js");
 
-app.use(checkForAuth("token"));
+// // app.use(checkForAuth("token"));
+// console.log("checkForAuth:", typeof au.checkForAuth);  // Should log 'function'
+
+// app.use(au.checkForAuth("token"));
 app.use("/api/v1/users",UserRouter);
 app.use("/api/v1/events",EventRouter);
 app.use("/api/v1/groups",GroupRouter);
 app.use("/api/v1/userjoin",UserGroupJoinRouter);
-app.use("/api/v1/orgs",OrgRouter);
+// app.use("/api/v1/orgs",OrgRouter);
 
 
 app.use((err,req,res,next)=>{
