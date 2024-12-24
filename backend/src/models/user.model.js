@@ -76,7 +76,7 @@ user.static("matchPasswordAndGenerateToken",async function(email,password){
         throw new ApiError(401,"Password Not Valied");
     }
 
-    const token=tokendetails.createTokenForUser(user);
+    const token=tokendetails.createTokenForPerson(user);
     return token;
 });
 

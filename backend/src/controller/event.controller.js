@@ -25,7 +25,7 @@ exports.createEvent = asyncHandler(async (req, res) => {
     if(!name || !startDate || !endDate || !location || !category || !pricePool || !description || !groupLimit ){
         throw new ApiError(400, "Please provide all required fields");
     }
-
+    // const orgcreator =await orgController.validateOrgId({orgId:creator ,fields:"_id"});
     await orgController.validateOrgId({orgId:creator ,fields:"_id"});
 
     try {
@@ -38,7 +38,7 @@ exports.createEvent = asyncHandler(async (req, res) => {
             pricePool,
             groupLimit,
             description,
-            creator
+            creator//orgcreator._id
         });
 
         return res.status(201).json(new ApiResponse(201, event, "Event created successfully"));

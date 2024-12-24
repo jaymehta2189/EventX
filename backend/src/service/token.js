@@ -3,11 +3,11 @@ const jwt=require("jsonwebtoken");
 
 const secretKey=process.env.SECRET_KEY;
 
-exports.createTokenForUser= (user)=>{
+exports.createTokenForPerson= (person)=>{
     return  jwt.sign({
-        _id:user._id,
-        email:user.email,
-        avatar:user.avatar,
+        _id:person._id,
+        email:person.email,
+        avatar:person.avatar,
     }
     ,secretKey);
 }
