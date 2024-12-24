@@ -6,7 +6,7 @@ const Group = require("../models/group.model");
 const User = require("../models/user.model");
 const UserController = require("./user.controller");
 const User_Group_Join = require("../models/User_Group_Join.model");
-
+const { generateQRAndSaveAtCloudinary } = require("../utils/generateQR");
 
 exports.validateGroupNameInEvent = async(eventId, groupName) => {
    
@@ -37,11 +37,11 @@ exports.createGroup = asyncHandler(async (req, res) => {
 
     try {
 
+        // const Qr = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/group/${groupLeader._id}/${event}`);
         const group = await Group.create({
             name,
             groupLeader: groupLeader._id,
-            event,
-            qrCode:"hello" // <--- change this with Qr code generation
+            event
         });
 
         if (!group) {

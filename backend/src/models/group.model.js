@@ -1,4 +1,5 @@
 const {Schema,model,mongoose}=require("mongoose")
+const { generateQRAndSaveAtCloudinary } = require("../utils/generateQR");
 
 /**
  * Group Schema:
@@ -30,8 +31,7 @@ const group = new Schema({
         ref: "User",
     },
     qrCode:{
-        type:String,
-        required: true
+        type:String
     },
     event: {
         type: Schema.Types.ObjectId,
@@ -42,8 +42,7 @@ const group = new Schema({
 
 group.pre('save', async function (next) {
     // Logic to generate QR code
-    console.log("Generating QR code for group");
-    this.qrCode = "hello" || GenrateQRCode(this._id);
+    this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/group/qr/${this._id}`);
     next();
 });
 
