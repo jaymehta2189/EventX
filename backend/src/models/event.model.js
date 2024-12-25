@@ -1,6 +1,6 @@
 const {Schema,model,mongoose}=require("mongoose");
 const { create } = require("./otp.model");
-
+const moment = require("moment-timezone");
 const User_Group_Join = require("./User_Group_Join.model");
 
 /**
@@ -47,26 +47,51 @@ const event = new Schema({
             message: 'Event:: {VALUE} is not an integer'
         }
     },
+    // startDate: {
+    //     type: Date,
+    //     required: true,
+    //     index: true,
+    //     validate: {
+    //         validator: function (value) {
+    //             return value > Date.now();
+    //         },
+    //         message: 'Event:: Start date and time must be in the future'
+    //     }
+    // },
+    // endDate: {
+    //     type: Date,
+    //     required: true,
+    //     validate: {
+    //         validator: function (value) {
+    //             return value > this.startDate;
+    //         },
+    //         message: 'Event:: End date and time must be after the start date and time'
+    //     }
+    // },
     startDate: {
         type: Date,
         required: true,
         index: true,
         validate: {
             validator: function (value) {
-                return value > Date.now();
+                const istNow = moment.tz(Date.now(), "Asia/Kolkata");
+                const istStartDate = moment.tz(value, "Asia/Kolkata");
+                return istStartDate.isAfter(istNow);
             },
-            message: 'Event:: Start date and time must be in the future'
-        }
+            message: 'Event:: Start date and time must be in the future as per IST',
+        },
     },
     endDate: {
         type: Date,
         required: true,
         validate: {
             validator: function (value) {
-                return value > this.startDate;
+                const istStartDate = moment.tz(this.startDate, "Asia/Kolkata");
+                const istEndDate = moment.tz(value, "Asia/Kolkata");
+                return istEndDate.isAfter(istStartDate);
             },
-            message: 'Event:: End date and time must be after the start date and time'
-        }
+            message: 'Event:: End date and time must be after the start date and time',
+        },
     },
     location: {
         type: String,
