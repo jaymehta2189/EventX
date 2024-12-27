@@ -37,7 +37,7 @@ exports.getUsersByEmails = async({emails , fields = null })=> {
     }
 
     const users = await User.find({ email: { $in: emails } }).select(fields);
-
+    console.log(users);
     if (users.length !== emails.length) {
         const foundEmails = users.map((u) => u.email);
         const missingEmails = emails.filter((email) => !foundEmails.includes(email));

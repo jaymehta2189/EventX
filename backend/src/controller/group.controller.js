@@ -26,10 +26,13 @@ exports.validateGroupNameInEvent = async (eventId, groupName) => {
 };
 
 exports.createGroup = asyncHandler(async (req, res) => {
-
+    
     // event is the event ID
-    const { name, groupLeaderEmailId, event, MemberEmailIds } = req.body;
 
+    const { name, groupLeaderEmailId, event, MemberEmailIds } = req.body;
+    if(req.user.role !== "user"){
+        throw new ApiError(403, "You are not authorized to create a group");
+    }
     if (!event || !mongoose.Types.ObjectId.isValid(event)) {
         throw new ApiError(400, "Please provide valid Event ID");
     }
@@ -40,12 +43,16 @@ exports.createGroup = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Event not found");
     }
 
-    const groupLeader = await UserController.getUserByEmail({ email: groupLeaderEmailId, fields: "_id" });
-
+    const groupLeader = await UserController.getUserByEmail({ email: groupLeaderEmailId, fields: "_id role" });
+    if(groupLeader.role !== "user"){throw new ApiError(400, "Group Leader must be a user");}
     await this.validateGroupNameInEvent(event, name);
 
-    const validMemberEmails = await UserController.getUsersByEmails({ emails: MemberEmailIds, fields: "_id" });
-
+    const validMemberEmails = await UserController.getUsersByEmails({ emails: MemberEmailIds, fields: "_id role" });
+    for (const member of validMemberEmails) {
+        if (member.role !== "user") {
+            throw new ApiError(400, "Group Member must be a user");
+        }
+    }
     const session = await mongoose.startSession();
     
     session.startTransaction();
@@ -84,5 +91,6 @@ exports.createGroup = asyncHandler(async (req, res) => {
         throw new ApiError(500, error.message);
     } finally {
         session.endSession();
+
     }
 });
