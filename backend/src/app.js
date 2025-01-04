@@ -4,6 +4,7 @@ const app = express();
 
 const cookieParser=require("cookie-parser");
 const path=require("path");
+const ApiError = require("./utils/ApiError.js");
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
@@ -30,12 +31,14 @@ app.use("/api/v1/userjoin",UserGroupJoinRouter);
 
 
 app.use((err,req,res,next)=>{
-    if(err){
+    if (err instanceof ApiError) {
         return res.status(err.statusCode).json({
-            success:err.success,
-            message:err.message,
-            errors:err.errors
+            code: err.code,
+            message: err.message,
+            data: err.data,
         });
+    } else {
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 });
 

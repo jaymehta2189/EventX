@@ -1,31 +1,11 @@
-const {Schema,model,mongoose}=require("mongoose");
-const { create } = require("./otp.model");
-const moment = require("moment-timezone");
-const User_Group_Join = require("./User_Group_Join.model");
+const {Schema,mongoose}=require("mongoose");
 
-/**
- * Event Schema:
- * - name: The unique name of the event.
- * - avatar: The image URL representing the event.
- * - description: A brief description of the event.
- * - groupLimit: The maximum number of groups that can participate.
- * - startDate: The event's start date, which must be in the future.
- * - endDate: The event's end date, which must be after the start date.
- * - location: The location where the event will be held.
- * - category: The event's category.
- * - creator: The organization that created the event (references to the Org model).
- * - winnerGroup: The group that wins the event (reference to the Group model).
- * - pricePool: The prize pool for the event, must be a positive number.
- */
-
-/* This code snippet is defining a Mongoose schema for an "Event" model. Let's break down what each
-property in the schema represents: */
 const event = new Schema({
     name: {
         type: String,
         required: true,
-        lowercase: true,
         trim: true,
+        lowercase: true,
         unique: true,
         index: true
     },
@@ -41,63 +21,37 @@ const event = new Schema({
     groupLimit: {
         type: Number,
         required: true,
-        min: 1,
+        min: [1, 'Event:: {VALUE} must be a positive number'],
         validate: {
-            validator: Number.isInteger,
-            message: 'Event:: {VALUE} is not an integer'
+            validator: (value) => Number.isInteger(value),
+            message: 'Event:: {VALUE} groupLimit must be an integer'
         }
     },
-    // startDate: {
-    //     type: Date,
-    //     required: true,
-    //     index: true,
-    //     validate: {
-    //         validator: function (value) {
-    //             return value > Date.now();
-    //         },
-    //         message: 'Event:: Start date and time must be in the future'
-    //     }
-    // },
-    // endDate: {
-    //     type: Date,
-    //     required: true,
-    //     validate: {
-    //         validator: function (value) {
-    //             return value > this.startDate;
-    //         },
-    //         message: 'Event:: End date and time must be after the start date and time'
-    //     }
-    // },
+    userLimit: {
+        type: Number,
+        required: true,
+        min: [1, 'Event:: {VALUE} must be a positive number'],
+        validate: {
+            validator: (value) => Number.isInteger(value),
+            message: `Event::{VALUE} UserLimit must be an integer`
+        }
+    },
     startDate: {
         type: Date,
         required: true,
-        index: true,
-        validate: {
-            validator: function (value) {
-                const istNow = moment.tz(Date.now(), "Asia/Kolkata");
-                const istStartDate = moment.tz(value, "Asia/Kolkata");
-                return istStartDate.isAfter(istNow);
-            },
-            message: 'Event:: Start date and time must be in the future as per IST',
-        },
+        index: true
     },
     endDate: {
         type: Date,
         required: true,
-        validate: {
-            validator: function (value) {
-                const istStartDate = moment.tz(this.startDate, "Asia/Kolkata");
-                const istEndDate = moment.tz(value, "Asia/Kolkata");
-                return istEndDate.isAfter(istStartDate);
-            },
-            message: 'Event:: End date and time must be after the start date and time',
-        },
+        index: true
     },
     location: {
         type: String,
         lowercase: true,
         trim: true,
-        required: true
+        required: true,
+        index: true
     },
     category: {
         type: String,
@@ -108,7 +62,7 @@ const event = new Schema({
     },
     creator: {
         type: Schema.Types.ObjectId,
-        ref: "user",
+        ref: "User",
         required: true
     },
     winnerGroup:{
@@ -119,13 +73,7 @@ const event = new Schema({
     pricePool: {
         type: Number,
         required: true,
-        min: [0, 'Event:: Prize pool must be a positive number'], // Ensure the prize pool is a positive number
-        validate: {
-            validator: function(value) {
-                return value >= 0; // Additional check to ensure no negative values
-            },
-            message: 'Event:: {VALUE} is not a valid prize pool amount'
-        }
+        min: [0, 'Event:: Prize pool must be a positive number'] // Ensure the prize pool is a positive number
     },
     timeLimit:{
         type:Date,
@@ -142,6 +90,8 @@ const event = new Schema({
 //         next(error); // Pass error to the next middleware
 //     }
 // });
+
+event.static.allowCategory = event.obj.category.enum;
 
 const Event = mongoose.model("Event", event);
 module.exports=Event;

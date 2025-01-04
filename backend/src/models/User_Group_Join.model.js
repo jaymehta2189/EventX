@@ -4,12 +4,12 @@ const user_group_join = new Schema({
     Group:{
         type: Schema.Types.ObjectId,
         ref:"Group",
-        required:true
+        required:[true,"Group is required"],
     },
     Member:{
         type:Schema.Types.ObjectId,
         ref:"User",
-        required:true,
+        required:[true,"Member is required"],
         index:true
     },
     timeLimit:{

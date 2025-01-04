@@ -2,8 +2,8 @@ const {Schema,model,mongoose}=require("mongoose")
 const tokendetails=require("../service/token.js")
 const { createHmac, randomBytes } = require("crypto");
 const ApiError = require("../utils/ApiError.js");
-const ApiResponse = require("../utils/ApiResponse.js");
 const { type } = require("os");
+const {UserError} = require("../utils/Constants/User.js");
 /**
  * User Schema:
  * - name: The name of the user.
@@ -25,13 +25,7 @@ const user = new Schema({
         lowercase: true,
         trim: true,
         index: true,
-        unique: true,
-        validate: {
-            validator: function (value) {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); // Basic email regex
-            },
-            message: 'User:: {VALUE} is not a valid email!'
-        }
+        unique: true
     },
     avatar: {
         type: String,
@@ -41,43 +35,55 @@ const user = new Schema({
     salt:{
         type:String
     },
+    branch:{
+        type:String,
+        required:true,
+        trim:true,
+        lowercase:true,
+        index:true
+    },
     role:{
         type:String,
         required:true,
         default:"user",
-        enum:["user","admin","org"]
+        index:true,
+        enum: ["user","org", "hod","admin"]
     },
     password: {
         type: String,
-        required: [true, 'User:: Password is required'],
+        required: true,
         minlength: 8 
     }
 });
 
 user.pre("save",function (next){
     const user=this;
+    // auto generate branch from email
+    this.branch = user.email.substring(2,4).toLowerCase();
+
     if(!user.isModified("password"))return;
     const salt=randomBytes(16).toString();
     
     const hashpassword = createHmac('sha256', salt)
                .update(user.password)
                .digest('hex');
-    console.log(hashpassword);
     this.salt=salt;
     this.password=hashpassword;
     next();
 });
+
 user.static("matchPasswordAndGenerateToken",async function(email,password){
     const user=await this.findOne({email});
-    if(!user)
-        return false;
+    if(!user){
+        throw new ApiError(UserError.USER_NOT_FOUND);
+    }
 
     const salt=user.salt;
     const originalpassword=user.password;
     const userPass=createHmac("sha256",salt).update(password).digest("hex");
 
     if(originalpassword!==userPass){
-        throw new ApiError(401,"Password Not Valied");
+        throw new ApiError(UserError.PASSWORD_MISMATCH);
     }
 
     const token=tokendetails.createTokenForUser(user);
@@ -89,6 +95,18 @@ user.static("matchPasswordAndGenerateToken",async function(email,password){
 // user.static("findRoleAndId", async function (filter) {
 //     return this.find(filter).select("_id role").lean();
 // });
+
+user.statics.allowedRoles = user.obj.role.enum;
+user.statics.emailPattern = /^\d{2}(it|ce|ec|ch)(uos|nsa)\d{3}@ddu\.ac\.in$/;
+function getAllBranchFromPattern(emailPattern){
+    const match = pattern.toString().match(/\((.*?)\)/);
+  if (match && match[1]) {
+    return match[1].split('|');
+  }
+  return [];
+}
+
+user.statics.Branches = getAllBranchFromPattern(user.statics.emailPattern);
 
 const User = mongoose.model("User", user);
 module.exports=User;

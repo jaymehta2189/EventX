@@ -28,6 +28,7 @@ const group = new Schema({
     groupLeader: {
         type: Schema.Types.ObjectId,
         ref: "User",
+        required: true
     },
     qrCode:{
         type:String
@@ -47,7 +48,11 @@ const group = new Schema({
 
 group.pre('save', async function (next) {
     // Logic to generate QR code
-    this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/group/qr/${this._id}`);
+    try{
+        this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/group/qr/${this._id}`);
+    }catch(error){
+        throw new ApiError(GroupError.QR_CODE_GENERATION_FAILED);
+    }
     next();
 });
 
