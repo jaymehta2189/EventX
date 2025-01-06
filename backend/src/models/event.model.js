@@ -18,6 +18,10 @@ const event = new Schema({
         required: true,
         trim: true
     },
+    joinGroup:{
+        type: Number,
+        default:0
+    },
     groupLimit: {
         type: Number,
         required: true,
@@ -48,10 +52,9 @@ const event = new Schema({
     },
     location: {
         type: String,
-        lowercase: true,
-        trim: true,
         required: true,
-        index: true
+        index: true,
+        enum:['MMH','Seminar Hall','Center foyer','Canteen','Narayan Bhavan']
     },
     category: {
         type: String,
@@ -91,7 +94,9 @@ const event = new Schema({
 //     }
 // });
 
-event.static.allowCategory = event.obj.category.enum;
+event.statics.allowCategory = event.path('category').enumValues;
+// event.static.allowLocation = event.obj.location.enum;
+event.statics.allowLocation = event.path('location').enumValues;
 
 const Event = mongoose.model("Event", event);
 module.exports=Event;

@@ -8,85 +8,32 @@ const otpGenerator = require("otp-generator");
 const Group = require("../models/group.model.js");
 
 const { UserError, UserSuccess } = require("../utils/Constants/User.js");
+const Unsafe_User = require("../models/unsafe_user.model.js");
+const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 
-// exports.signupPost = asyncHandler(async (req, res) => {
-//     const { name, email, password } = req.body;
-//     if (!name || !email || !password) {
-//         throw new ApiError(400, "Please provide all the details");
-//     }
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) {
-//         throw new ApiError(400, "User already exists with this email.");
-//     }
-//     console.log(name);
-//     const user = await User.create({
-//         name,
-//         email,
-//         password
-//     });
-//     if (!user) {
-//         throw new ApiError(400, "Invalid User Data");
-//     }
-//     console.log(user);
-//     console.log("user Created");
-//     return res.status(201).json(new ApiResponse(201, { Name: name, Email: email, avatar: avatar } = user, "User Created"));
-// }
-// );
+
 
 // input email should be tolower and trim
-const validateEmail = asyncHandler(async (req, res) => {
-
-    const {email} = req.body;
+async function validateEmail (email) {
 
     if (!email) {
         throw new ApiError(UserError.MISSING_EMAIL);
     }
 
-    if(!User.emailPattern.test(email)){
+    if (!User.emailPattern.test(email)) {
         throw new ApiError(UserError.INVALID_EMAIL);
     }
 
-    const user = await User.findOne({ email }).select("_id");
+    const user = await User.exists({ email });
 
-    if(user){
+    if (user) {
         throw new ApiError(UserError.USER_ALREADY_EXISTS);
     }
-
-    return  res
-            .status(UserSuccess.EMAIL_VALIDATED.statusCode)
-            .json(new ApiResponse(UserSuccess.EMAIL_VALIDATED));
-});
-
-// input role should be tolower and trim
-const validateRole = asyncHandler(async (req, res) => {
-    const {role}  = req.body;
-    if (!role) {
-        throw new ApiError(UserError.MISSING_ROLE);
-    }
-    if(!User.allowedRoles.includes(role.toLowerCase().trim())){
-        throw new ApiError(UserError.INVALID_ROLE,role);
-    }
-    return res
-            .status(UserSuccess.ROLE_VALIDATED.statusCode)
-            .json(new ApiResponse(UserSuccess.ROLE_VALIDATED));
-});
-
-const validatePassword = asyncHandler(async (req, res) => {
-    const {password} = req.body;
-    if (!password) {
-        throw new ApiError(UserError.MISSING_PASSWORD);
-    }
-    if(password.length<8){
-        throw new ApiError(UserError.INVALID_PASSWORD);
-    }
-    return res
-            .status(UserSuccess.PASSWORD_VALIDATED.statusCode)
-            .json(new ApiResponse(UserSuccess.PASSWORD_VALIDATED));
-});
+};
 
 // input shoble trim or lowercase
 const verifyOTP = async function (email, otp) {
-    
+
     if (!email || !otp) {
         throw new ApiError(UserError.MISSING_FIELDS);
     }
@@ -143,14 +90,14 @@ const signinPost = asyncHandler(async (req, res) => {
         return res
             .status(UserSuccess.LOG_IN.statusCode)
             .cookie("token", token)
-            .json(new ApiResponse(UserSuccess.LOG_IN,token));
-            
+            .json(new ApiResponse(UserSuccess.LOG_IN, token));
+
     } catch (error) {
-        if(error instanceof ApiError){
+        if (error instanceof ApiError) {
             throw error;
         }
         console.log(error);
-        throw new ApiError(UserError.COOKIE_NOT_AVAILABLE,error.message);
+        throw new ApiError(UserError.COOKIE_NOT_AVAILABLE, error.message);
     }
 });
 
@@ -164,11 +111,8 @@ const logout = asyncHandler((req, res) => {
 // input email should be tolower and trim
 const sendOTP = asyncHandler(async (req, res) => {
     const email = req.body.email;
-    const checkUserPresent = await User.findOne({ email });
-
-    if (checkUserPresent) {
-        throw new ApiError(UserError.USER_ALREADY_EXISTS);
-    }
+    
+    await validateEmail(email);
 
     let otp;
     do {
@@ -177,7 +121,7 @@ const sendOTP = asyncHandler(async (req, res) => {
 
     await OTP.create({ email, otp });
 
-    return res.status(UserSuccess.OTP_SENT.statusCode).json(new ApiResponse(UserSuccess.OTP_SENT, { email ,otp}));
+    return res.status(UserSuccess.OTP_SENT.statusCode).json(new ApiResponse(UserSuccess.OTP_SENT, { email, otp }));
 });
 
 // input email should be tolower and trim
@@ -190,41 +134,147 @@ const signupPost = asyncHandler(async (req, res) => {
         otp,
     } = req.body;
 
-    if (!name || !password  || !role) {
+    if (!name || !password || !role) {
         throw new ApiError(UserError.MISSING_FIELDS);
     }
-    await verifyOTP(email, otp);
-    try {
 
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role
-        });
-        return res
-            .status(UserSuccess.USER_CREATED.statusCode)
-            .json(new ApiResponse(UserSuccess.USER_CREATED,{email,role,name}));
+    await verifyOTP(email, otp);
+
+    try {
+        // for user role 
+        // if (role === User.allowedRoles[0]) {
+            await User.create({
+                name,
+                email,
+                password,
+                role
+            });
+
+            return res
+                .status(UserSuccess.USER_CREATED.statusCode)
+                .json(new ApiResponse(UserSuccess.USER_CREATED, { email, role, name }));
+        // }
+
+        // await Unsafe_User.create({
+        //     name,
+        //     email,
+        //     password,
+        //     role
+        // });
+
+        // return res
+        //     .status(UnSafeUserSuccess.WAIT_FOR_CONFIRMATION.statusCode)
+        //     .json(UnSafeUserSuccess.WAIT_FOR_CONFIRMATION);
 
     } catch (error) {
+
         if (error.name === "ValidationError") {
-            throw new ApiError(UserError.INVALID_CREDENTIALS,error.message); // Catch validation errors
+            throw new ApiError(UserError.INVALID_CREDENTIALS, error.message); // Catch validation errors
         }
+
         console.log(error);
-        throw new ApiError(UserError.USER_CREATION_FAILED,error.message); // Catch other errors
+        throw new ApiError(UserError.USER_CREATION_FAILED, error.message); // Catch other errors
+
+    }
+});
+
+// view hod reQuest for sign up
+const AdminViewForHOD = asyncHandler(async (req, res) => {
+    try {
+        const Hods = await Unsafe_User.find({
+            role: User.allowedRoles[2]
+        }).select("_id name email branch");
+
+        return res
+            .status(UserSuccess.ADMIN_UNHOD_VIEW.statusCode)
+            .json(UserSuccess.ADMIN_UNHOD_VIEW, Hods);
+
+    } catch (error) {
+        console.log(error.message);
+        throw new ApiError(UserError.ADMIN_FAILED_HODS);
+    }
+});
+
+//view org reQuest for sign up
+const AdminViewForORG = asyncHandler(async (req, res) => {
+    try {
+        const Orgs = await Unsafe_User.find({
+            role: User.allowedRoles[1]
+        }).select("_id name email branch");
+
+        return res
+            .status(UserSuccess.ADMIN_UNORG_VIEW.statusCode)
+            .json(UserSuccess.ADMIN_UNORG_VIEW, Orgs);
+
+    } catch (error) {
+        console.log(error.message);
+        throw new ApiError(UserError.ADMIN_FAILED_ORGS);
+    }
+});
+
+// view 
+const HodViewORG = asyncHandler(async (req, res) => {
+    try {
+
+        // not work it
+        const pipeline = [
+            {
+                $match:{
+                    _id : new mongoose.Types.ObjectId(req.user._id)
+                }
+            },
+            {
+                $project:{
+                    branch:1
+                }
+            },
+            {
+                $lookup:{
+                    from:"unsafe_users",
+                    localField: User.allowedRoles[1],
+                    foreignField:"role",
+                    as:"users"
+                }
+            },
+            {
+                $match:{
+                    "users.branch": "$branch"
+                }
+            },
+            {
+                $project:{
+                    "users._id":1,
+                    "users.name":1,
+                    "users.email":1
+                }
+            }
+        ];
+
+        const Orgs = await User.aggregate(pipeline).exec();
+
+        return res
+            .status(UserSuccess.HOD_UNORG_VIEW.statusCode)
+            .json(UserSuccess.HOD_UNORG_VIEW, Orgs);
+
+    } catch (error) {
+        console.log(error.message);
+        throw new ApiError(UserError.HOD_FAILED_ORGS);
     }
 });
 
 module.exports = {
     validateEmail,
-    validatePassword,
-    validateRole,
+    
     verifyOTP,
     getUserByEmail,
     getUsersByEmails,
     signinPost,
     signupPost,
     sendOTP,
-    logout
+    logout,
+
+    AdminViewForHOD,
+    AdminViewForORG
+    // make for hod
 };
 

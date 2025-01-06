@@ -12,7 +12,7 @@ const {UserError} = require("../utils/Constants/User.js");
  * - password: The password for the user account (must be at least 8 characters).
  */
 
-const user = new Schema({
+const authority = new Schema({
     name: {
         type: String,
         required: true,
@@ -37,7 +37,7 @@ const user = new Schema({
     },
     branch:{
         type:String,
-        required:false,
+        required:true,
         trim:true,
         lowercase:true,
         index:true
@@ -45,9 +45,8 @@ const user = new Schema({
     role:{
         type:String,
         required:true,
-        default:"user",
         index:true,
-        enum: ["user","org"]
+        enum: [ "hod","admin"]
     },
     password: {
         type: String,
@@ -56,36 +55,37 @@ const user = new Schema({
     }
 });
 
-user.pre("save",function (next){
-    const user=this;
+authority.pre("save",function (next){
+    const authority=this;
     // auto generate branch from email
-    this.branch = user.email.substring(2,4).toLowerCase();
-    if(!user.isModified("password"))return;
+    this.branch = authority.email.substring(2,4).toLowerCase();
+
+    if(!authority.isModified("password"))return;
     const salt=randomBytes(16).toString();
     
     const hashpassword = createHmac('sha256', salt)
-               .update(user.password)
+               .update(authority.password)
                .digest('hex');
     this.salt=salt;
     this.password=hashpassword;
     next();
 });
 
-user.static("matchPasswordAndGenerateToken",async function(email,password){
-    const user=await this.findOne({email});
-    if(!user){
+authority.static("matchPasswordAndGenerateToken",async function(email,password){
+    const authority=await this.findOne({email});
+    if(!authority){
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
 
-    const salt=user.salt;
-    const originalpassword=user.password;
+    const salt=authority.salt;
+    const originalpassword=authority.password;
     const userPass=createHmac("sha256",salt).update(password).digest("hex");
 
     if(originalpassword!==userPass){
         throw new ApiError(UserError.PASSWORD_MISMATCH);
     }
 
-    const token=tokendetails.createTokenForUser(user);
+    const token=tokendetails.createTokenForUser(authority);
     return token;
 });
 
@@ -95,17 +95,17 @@ user.static("matchPasswordAndGenerateToken",async function(email,password){
 //     return this.find(filter).select("_id role").lean();
 // });
 
-user.statics.allowedRoles = user.obj.role.enum;
-user.statics.emailPattern = /^\d{2}(it|ce|ec|ch)(uos|nsa)\d{3}@ddu\.ac\.in$/;
+authority.statics.allowedRoles = authority.obj.role.enum;
+authority.statics.emailPattern = /^\d{2}(it|ce|ec|ch)(uos|nsa)\d{3}@ddu\.ac\.in$/;
 function getAllBranchFromPattern(emailPattern){
-    const match = emailPattern.toString().match(/\((.*?)\)/);
+    const match = pattern.toString().match(/\((.*?)\)/);
   if (match && match[1]) {
     return match[1].split('|');
   }
   return [];
 }
 
-user.statics.Branches = getAllBranchFromPattern(user.statics.emailPattern);
+authority.statics.Branches = getAllBranchFromPattern(authority.statics.emailPattern);
 
-const User = mongoose.model("User", user);
-module.exports=User;
+const Authority = mongoose.model("Authority", authority);
+module.exports=Authority;

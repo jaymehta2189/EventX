@@ -9,13 +9,13 @@ exports.GroupError = Object.freeze({
     DUPLICATE_EMAIL: { customCode: 1212, message: "Duplicate email.", statusCode: 400 },
     INVALID_MEMBER_ROLE: { customCode: 1213, message: "Invalid role.", statusCode: 403 },
     MISSING_GROUP_SIZE: { customCode: 1214, message: "Group size is missing.", statusCode: 400 },
-    
 
     INVALID_SCORE: { customCode: 1220, message: "Group score must be between 0 and 100.", statusCode: 400 },
     INVALID_EVENT: { customCode: 1221, message: "Event not found.", statusCode: 404 },
 
     MISSING_GROUP_LEADER_EMAIL: { customCode: 1230, message: "Group leader email is missing.", statusCode: 400 },
     INVALID_GROUP_LEADER: { customCode: 1231, message: "Group leader not found.", statusCode: 404 },
+    ORG_INVALIED:{ customCode: 1232, message: "Group member is creator of event.", statusCode: 403 },
     
     QR_CODE_GENERATION_FAILED: { customCode: 1275, message: "QR code generation failed.", statusCode: 500 },
     GROUP_CREATION_FAILED: { customCode: 1276, message: "Failed to create group.", statusCode: 500 }

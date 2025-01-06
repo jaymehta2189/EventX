@@ -34,6 +34,7 @@ exports.EventSuccess = Object.freeze({
     EVENT_ALL_FOUND: { customCode: 2103, message: "All events found successfully.", statusCode: 200 },
     EVENT_FOUND: { customCode: 2104, message: "Event found successfully.", statusCode: 200 },
     EVENT_NOT_FULL: { customCode: 2105, message: "Event is not full.", statusCode: 200 },
+    FREE_LOCATIONS_FOUND:{ customCode: 2106, message: "free location is found .", statusCode: 200 },
 
     NAME_VALIDATED: { customCode: 2150, message: "Event name is validated.", statusCode: 200 },
     START_DATE_VALIDATED: { customCode: 2151, message: "Event start date is validated.", statusCode: 200 },

@@ -1,7 +1,7 @@
 exports.UserError = Object.freeze({
     USER_NOT_FOUND: { customCode: 1001, message: "User not found.", statusCode: 404 },
     USER_ALREADY_EXISTS: { customCode: 1002, message: "User already exists.", statusCode: 400 },
-
+    
     MISSING_EMAIL: { customCode: 1010, message: "Email is missing.", statusCode: 400 },
     INVALID_EMAIL: { customCode: 1011, message: "The email provided is invalid.", statusCode: 400 },
 
@@ -19,18 +19,24 @@ exports.UserError = Object.freeze({
     COOKIE_NOT_AVAILABLE: { customCode: 1051, message: "Cookie not available.", statusCode: 400 },
     INVALID_CREDENTIALS: { customCode: 1052, message: "Invalid credentials.", statusCode: 400 },
 
-    USER_CREATION_FAILED: { customCode: 1075, message: "User creation failed.", statusCode: 500 }
+    USER_CREATION_FAILED: { customCode: 1075, message: "User creation failed.", statusCode: 500 },
+    ADMIN_FAILED_HODS :{ customCode: 1076, message: "Admin view unsafe hod failed.", statusCode: 500 },
+    ADMIN_FAILED_ORGS:{ customCode: 1077, message: "Admin view unsafe org failed.", statusCode: 500 },
+    HOD_FAILED_ORGS :{ customCode: 1078, message: "Hod view unsafe org failed.", statusCode: 500 }
 });
 
 exports.UserSuccess = Object.freeze({
     USER_CREATED: { customCode: 2001, message: "User created successfully.", statusCode: 201 },
     USER_UPDATED: { customCode: 2002, message: "User updated successfully.", statusCode: 200 },
+    ADMIN_UNHOD_VIEW: { customCode: 2003, message: "admin view unsafe hod.", statusCode: 200 },
+    ADMIN_UNORG_VIEW: { customCode: 2004, message: "admin view unsafe org.", statusCode: 200 },
+    HOD_UNORG_VIEW: { customCode: 2005, message: "hod view unsafe org.", statusCode: 200 },
 
-    LOG_IN: { customCode:2003 , message:"Login Successfully.",statusCode:201},
-    LOG_OUT: { customCode:2004 , message:"Logout Successfully.",statusCode:200},
+    LOG_IN: { customCode:2006 , message:"Login Successfully.",statusCode:201},
+    LOG_OUT: { customCode:2007 , message:"Logout Successfully.",statusCode:200},
 
-    OTP_SENT: { customCode: 2005, message: "OTP sent successfully.", statusCode: 200 },
-    OTP_VERIFIED: { customCode: 2006, message: "OTP verified successfully.", statusCode: 200 },
+    OTP_SENT: { customCode: 2008, message: "OTP sent successfully.", statusCode: 200 },
+    OTP_VERIFIED: { customCode: 2009, message: "OTP verified successfully.", statusCode: 200 },
 
     EMAIL_VALIDATED: { customCode: 2050, message: "Email validated successfully.", statusCode: 200 },
 
