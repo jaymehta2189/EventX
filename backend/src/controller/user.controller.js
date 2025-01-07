@@ -11,6 +11,21 @@ const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const Unsafe_User = require("../models/unsafe_user.model.js");
 const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 
+async function findByIdAndUpdate(id, { sem, rollno, contactdetails }) {
+    console.log("Searching for user with id:", id);
+
+    const user = await User.findById(id); // Match by _id
+    console.log("Found user:", user);
+    if (!user) {
+        throw new ApiError(UserError.USER_NOT_FOUND);
+    }
+
+    user.sem = sem;
+    user.rollno = rollno;
+    user.contactdetails = contactdetails;
+    await user.save(); // save() will now work
+    return user;
+}
 
 
 // input email should be tolower and trim
@@ -262,9 +277,28 @@ const HodViewORG = asyncHandler(async (req, res) => {
     }
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+    const { sem, rollno, contactdetails } = req.body;
+    try {
+        console.log("hello");
+        console.log("req.user:", req.user);
+
+        const user = await User.findByIdAndUpdate({_id:new mongoose.Types.ObjectId(req.user._id)}, { sem, rollno, contactdetails }).select("_id");
+        console.log("Updated user:", user);
+
+        return res
+            .status(UserSuccess.PROFILE_UPDATED.statusCode)
+            .json(new ApiResponse(UserSuccess.PROFILE_UPDATED));
+    } catch (error) {
+        console.log(error.message);
+        throw new ApiError(UserError.PROFILE_UPDATE_FAILED);
+    }
+});
+
+
 module.exports = {
     validateEmail,
-    
+    updateProfile,
     verifyOTP,
     getUserByEmail,
     getUsersByEmails,

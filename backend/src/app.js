@@ -1,6 +1,7 @@
 const express = require("express");
 
 const app = express();
+const cors = require('cors');
 
 const cookieParser=require("cookie-parser");
 const path=require("path");
@@ -11,6 +12,8 @@ app.use(express.urlencoded({extended:false}));
 app.use(express.static(path.resolve("../public")));
 app.use(express.static(path.join(__dirname,"../public/images")));
 app.use(cookieParser());
+app.use(cors());
+
 
 const UserRouter = require("./routes/user.route.js");
 const EventRouter = require("./routes/event.route.js");
