@@ -1,4 +1,5 @@
 const {Schema,mongoose}=require("mongoose");
+const User = require("./user.model");
 
 const event = new Schema({
     name: {
@@ -40,6 +41,13 @@ const event = new Schema({
             message: `Event::{VALUE} UserLimit must be an integer`
         }
     },
+    allowBranch:[
+        {
+            type: String,
+            required:true,
+            enum: User.allowBranch
+        }
+    ],
     startDate: {
         type: Date,
         required: true,
