@@ -170,6 +170,7 @@ const createEvent = asyncHandler(async (req, res) => {
             endDate : istEndDate.toDate(),
             location,
             category,
+            avatar,
             pricePool,
             groupLimit,
             userLimit,
@@ -223,6 +224,8 @@ const findAllEvent = asyncHandler(async (req, res) => {
                     name: 1,
                     startDate: 1,
                     endDate: 1,
+                    description: 1,
+                    creator: 1,
                     location: 1,
                     category: 1,
                     avatar: 1

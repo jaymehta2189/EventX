@@ -57,7 +57,21 @@ const user = new Schema({
         type: String,
         required: true,
         minlength: 8 
+    },
+    sem:{
+        type:Number,
+        required:false,
+    },
+    rollno:{
+        type:String,
+        required:false,
+        trim:true,
+    },
+    contactdetails:{
+        type:Number,
+        required:false,
     }
+    
 });
 
 user.pre("save",function (next){

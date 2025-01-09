@@ -12,6 +12,8 @@ exports.UserError = Object.freeze({
     PASSWORD_MISMATCH: { customCode: 1031, message: "Password mismatch.", statusCode: 400 },
     INVALID_PASSWORD: { customCode: 1032, message: "Password must be at least 8 characters.", statusCode: 400 },
 
+    PROFILE_UPDATE_FAILED:{customCode:2011,message:"Profile update failed.",statusCode:400},
+
     MISSING_OTP: { customCode: 1040, message: "OTP is missing.", statusCode: 400 },
     INVALID_OTP: { customCode: 1041, message: "Invalid OTP.", statusCode: 400 },
 
@@ -31,6 +33,9 @@ exports.UserSuccess = Object.freeze({
     ADMIN_UNHOD_VIEW: { customCode: 2003, message: "admin view unsafe hod.", statusCode: 200 },
     ADMIN_UNORG_VIEW: { customCode: 2004, message: "admin view unsafe org.", statusCode: 200 },
     HOD_UNORG_VIEW: { customCode: 2005, message: "hod view unsafe org.", statusCode: 200 },
+
+    PROFILE_UPDATED:{customCode:2010,message:"Profile updated successfully.",statusCode:200},
+    
 
     LOG_IN: { customCode:2006 , message:"Login Successfully.",statusCode:201},
     LOG_OUT: { customCode:2007 , message:"Logout Successfully.",statusCode:200},
