@@ -104,7 +104,7 @@ const signinPost = asyncHandler(async (req, res) => {
 
         return res
             .status(UserSuccess.LOG_IN.statusCode)
-            .cookie("token", token)
+            .cookie("token", token,{path:"/"})
             .json(new ApiResponse(UserSuccess.LOG_IN, token));
 
     } catch (error) {
@@ -117,6 +117,8 @@ const signinPost = asyncHandler(async (req, res) => {
 });
 
 const logout = asyncHandler((req, res) => {
+    console.log(req.cookies["token"]);
+    console.log(req.headers["authorization"]);
     return res
         .status(UserSuccess.LOG_OUT.statusCode)
         .clearCookie("token")

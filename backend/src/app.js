@@ -14,7 +14,11 @@ app.use(express.urlencoded({extended:false}));
 app.use(express.static(path.resolve(__dirname, '../public')));
 // app.use(express.static(path.join(__dirname,"../public/images")));
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Replace with your frontend URL
+    credentials: true, // Allow cookies
+}));
+
 app.use(fileUpload());
 
 const UserRouter = require("./routes/user.route.js");
