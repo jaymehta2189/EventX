@@ -139,18 +139,25 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
 
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit } = req.body;
-    console.log("hello")
+    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit,avatar } = req.body;
+    // console.log("hello")
     if (!name || !startDate || !endDate || !location || !category || !pricePool || !description || !groupLimit || !userLimit) {
         throw new ApiError(EventError.PROVIDE_ALL_FIELDS);
     }
-    console.log("hello1")
+    // console.log("hello1")
     await validateSameNameEvent(name);
-    console.log("hello")
+    // console.log("hello")
     const { istStartDate , istEndDate } = await validateDate(startDate,endDate);
-    console.log("hello")
+    // console.log("hello")
     await validateCategory(category);
-    console.log("hello")
+    // console.log("hello")
+    console.log("hello");
+    if (req.files && req.files.avatar) {
+        const localFilePath = req.files.avatar.path; // Assuming the file is being uploaded using a library like 'express-fileupload'
+        avatar = await uploadOnCloudinary(localFilePath);
+    }
+    console.log(avatar);
+
     try {
 
         const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -161,6 +168,7 @@ const createEvent = asyncHandler(async (req, res) => {
             endDate : istEndDate.toDate(),
             location,
             category,
+            avatar,
             pricePool,
             groupLimit,
             userLimit,
@@ -210,6 +218,8 @@ const findAllEvent = asyncHandler(async (req, res) => {
                     name: 1,
                     startDate: 1,
                     endDate: 1,
+                    description: 1,
+                    creator: 1,
                     location: 1,
                     category: 1,
                     avatar: 1

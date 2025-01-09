@@ -1,5 +1,6 @@
 const express = require("express");
 
+const fileUpload = require('express-fileupload');
 const app = express();
 const cors = require('cors');
 
@@ -9,11 +10,12 @@ const ApiError = require("./utils/ApiError.js");
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}));
-app.use(express.static(path.resolve("../public")));
-app.use(express.static(path.join(__dirname,"../public/images")));
+// app.use(express.static(path.resolve("../public")));
+app.use(express.static(path.resolve(__dirname, '../public')));
+// app.use(express.static(path.join(__dirname,"../public/images")));
 app.use(cookieParser());
 app.use(cors());
-
+app.use(fileUpload());
 
 const UserRouter = require("./routes/user.route.js");
 const EventRouter = require("./routes/event.route.js");

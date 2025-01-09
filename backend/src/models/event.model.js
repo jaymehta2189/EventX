@@ -11,8 +11,9 @@ const event = new Schema({
         index: true
     },
     avatar: {
-        type: String
-        // required: true
+        type: String,
+        required: true,
+        default:"https://res.cloudinary.com/dlswoqzhe/image/upload/v1736367840/Collaborative-Coding.-A-developer-team-working-together.-min-896x504_mnw9np.webp"
     },
     description: {
         type: String,
@@ -44,7 +45,7 @@ const event = new Schema({
     allowBranch:[
         {
             type: String,
-            required:true,
+            required:false,
             enum: User.allowBranch
         }
     ],
