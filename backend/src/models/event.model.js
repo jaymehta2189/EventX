@@ -41,13 +41,21 @@ const event = new Schema({
             message: `Event::{VALUE} UserLimit must be an integer`
         }
     },
-    allowBranch:[
-        {
-            type: String,
-            required:true,
-            enum: User.allowBranch
+    girlMinLimit:{
+        type: Number,
+        default:0,
+        validate:{
+            validator: (value) =>{
+                return this.userLimit >= girlMinLimit;
+            },
+            message: `Event::{VALUE} girl Limit greater then user Limit`
         }
-    ],
+    },
+    allowBranch:{
+        type: [String],
+        required:true,
+        enum: [...User.Branches,'all']
+    },
     startDate: {
         type: Date,
         required: true,
@@ -105,6 +113,8 @@ const event = new Schema({
 event.statics.allowCategory = event.path('category').enumValues;
 // event.static.allowLocation = event.obj.location.enum;
 event.statics.allowLocation = event.path('location').enumValues;
+
+event.statics.allowBranch = event.path('allowBranch').enumValues;
 
 const Event = mongoose.model("Event", event);
 module.exports=Event;

@@ -12,80 +12,107 @@ const { GroupError, GroupSuccess } = require("../utils/Constants/Group");
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
 
-    const existSameNameGroupInEvent = await Group.find({ event: new mongoose.Types.ObjectId(eventId), name: groupName });
+    const existSameNameGroupInEvent = await Group.findOne({ event: new mongoose.Types.ObjectId(eventId), name: groupName }).select("_id").lean();
 
-    if (existSameNameGroupInEvent.length > 0) {
+    if (existSameNameGroupInEvent) {
         throw new ApiError(GroupError.SAME_GROUP_EXSIST);
     }
 };
 
-// this not use only for testing purpose 
-// check event is full or not give user limit and time limit so this function is not used
-// const validateGroupSize = asyncHandler(async (req, res) => {
-//     const { eventId, groupSize } = req.body;
-//     if (!groupSize) {
-//         throw new ApiError(GroupError.MISSING_GROUP_SIZE);
-//     }
-
-//     const event = await Event.findById(eventId).select("userLimit");
-
-//     if (!event || !event.userLimit) {
-//         throw new ApiError(GroupError.INVALID_EVENT);
-//     }
-//     if (event.userLimit < groupSize) {
-//         throw new ApiError(GroupError.GROUP_LIMIT_EXCEEDED);
-//     }
-
-//     return res
-//         .status(GroupSuccess.GROUP_SIZE_VALIDATED.statusCode)
-//         .json(new ApiResponse(GroupSuccess.GROUP_SIZE_VALIDATED));
-// });
-
-//give input tolower and trim
-//not duplicate
-async function validateMemberRole(eventId, MemeberEmails) {
-
-    const allowedRoles = ["user", "org"];
-
-    const users = await User.find({ email: { $in: MemeberEmails }, role: { $in: allowedRoles } }).select("_id email role");
-
-    if (MemeberEmails.length !== users.length) {
-        const foundEmails = users.map((u) => u.email);
-        const missingEmails = MemeberEmails.filter((email) => !foundEmails.includes(email));
-        throw new ApiError(GroupError.INVALID_MEMBER_ROLE, missingEmails);
-    }
-
+async function validateCreatorOrgNotJoinEvent(eventId, users, role) {
     const OrgUser = users
-            .filter(user => user.role == allowedRoles[1])
-            .map(user => user._id);
+        .filter(user => user.role == role)
+        .map(user => user._id);
 
-    const NotallowOrg = await Event.find({ _id: new mongoose.Types.ObjectId(eventId), creator: { $in: OrgUser } });
+    const NotallowOrg = await Event.findOne({ _id: new mongoose.Types.ObjectId(eventId), creator: { $in: OrgUser } }).select("_id").lean();
 
-    if (NotallowOrg.length > 0) {
+    if (NotallowOrg) {
         throw new ApiError(GroupError.ORG_INVALIED);
     }
+}
+
+async function validateAllowBranch(users, allowBranch) {
+    const userBranch = users.map(u => u.branch);
+
+    if (!userBranch.every(branch => allowBranch.includes(branch))) {
+        throw new ApiError(GroupError.MEMBER_BRANCH_INVALIED);
+    }
+}
+
+async function validateGirlCount(users, minGirlCount) {
+    const groupGirlCount = users.reduce((count, user) => {
+        return user.gender === 'female' ? count + 1 : count;
+    }, 0);
+    if (groupGirlCount < minGirlCount) {
+        throw new ApiError(GroupError.LESS_GIRL);
+    }
+}
+
+async function validateMemberRole(eventId, MemeberEmails) {
+    const allowedRoles = User.allowedRoles;
+
+    console.log(allowedRoles);
+
+    const data = await User.aggregate([
+        {
+            $match: {
+                email: { $in: MemeberEmails },
+                role: { $in: allowedRoles },
+            },
+        },
+        {
+            $lookup: {
+                from: "events", // Replace with the actual Event collection name
+                localField: null, // No direct relationship between User and Event
+                foreignField: "_id",
+                as: "eventDetails",
+                pipeline: [
+                    { $match: { _id: new mongoose.Types.ObjectId(eventId) } },
+                    { $project: { allowBranch: 1, girlMinLimit: 1 } },
+                ],
+            },
+        },
+        {
+            $addFields: {
+                eventDetails: { $arrayElemAt: ["$eventDetails", 0] },
+            },
+        },
+    ]).lean();
+
+
+    if (data.length === 0 || !data[0].eventDetails) {
+        throw new ApiError(GroupError.INVALID_EVENT);
+    }
+
+    const users = data.map((item) => ({
+        _id: item._id,
+        email: item.email,
+        role: item.role,
+        branch: item.branch,
+        gender: item.gender,
+    }));
+
+    const event = data[0].eventDetails;
+
+    const validationPromises = [
+        validateCreatorOrgNotJoinEvent(eventId, users, allowedRoles[1]),
+        validateAllowBranch(users, event.allowBranch),
+        validateGirlCount(users, event.girlMinLimit),
+    ];
+
+    await Promise.all(validationPromises);
 
     return users.map((u) => u._id);
-};
+}
+
 
 // Leader is Validate
-async function validateGroupLeader(groupLeaderEmail) {
+async function validateGroupLeader(groupLeaderEmail, validMemberEmail) {
+    if (validMemberEmail.include(groupLeaderEmail))
+        return await User.findOne({ email: groupLeaderEmail }).select("_id").lean();
 
-    return await User.findOne({ email: groupLeaderEmail }).select("_id").lean();
+    throw new ApiError(GroupError.TRY_TO_CHANGE_REQ_BODY);
 
-    // const allowedRoles = ["user", "org"];
-    // const user = await User.aggregate({ email: groupLeaderEmail , role: { $in: allowedRoles } }).select("_id email role");
-    // if (!user) {
-    //     throw new ApiError(GroupError.INVALID_GROUP_LEADER);
-    // }
-    // if(user.role != allowedRoles[1]){
-    //     return user._id;
-    // }
-    // const NotallowOrg = await Event.exsist({_id:new mongoose.Types.ObjectId(eventId),creator: user._id});
-    // if (NotallowOrg) {
-    //     throw new ApiError(GroupError.ORG_INVALIED);
-    // }
-    // return user._id;
 };
 
 //give input tolower and trim
@@ -98,20 +125,22 @@ const createGroup = asyncHandler(async (req, res) => {
     if (!name || !groupLeader || !event || !validMemberEmail || !timeLimit || !Array.isArray(validMemberEmail) || validMemberEmail.length === 0) {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
-    console.log("hello");
-    await validateGroupNameInEvent(event, name);
-    console.log("hello");
-    const validMemberId = await validateMemberRole(event, validMemberEmail);
-    console.log("hello");
-    const validatedLeader = await validateGroupLeader(groupLeader);
-    console.log("hello");
+
+    const AllValidatePromise = [
+        validateGroupNameInEvent(event, name),
+        validateMemberRole(event, validMemberEmail),
+        validateGroupLeader(groupLeader, validMemberEmail),
+    ];
+
+    const [_, validMemberId, validatedLeader] = await Promise.all(AllValidatePromise);
+
     const session = await mongoose.startSession();
 
     session.startTransaction();
 
     try {
 
-        const group = await Group.create({
+        const group = await Group.collection.insertOne({
             name,
             groupLeader: validatedLeader,
             event,
@@ -128,11 +157,17 @@ const createGroup = asyncHandler(async (req, res) => {
             }
         }));
 
-        await User_Group_Join.bulkWrite(userGroupJoinOperations, { session });
-
-        await Event.findByIdAndUpdate({ _id: new mongoose.Types.ObjectId(event) }, { $inc: { joinGroup: 1 } });
+        await Promise.all([
+            User_Group_Join.bulkWrite(userGroupJoinOperations, { session }),
+            Event.findByIdAndUpdate(
+                { _id: new mongoose.Types.ObjectId(event) },
+                { $inc: { joinGroup: 1 } },
+                { session }
+            ),
+        ]);
 
         await session.commitTransaction();
+
         return res
             .status(GroupSuccess.GROUP_CREATED.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_CREATED, { id: group._id }));

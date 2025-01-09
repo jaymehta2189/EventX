@@ -16,9 +16,13 @@ exports.GroupError = Object.freeze({
     MISSING_GROUP_LEADER_EMAIL: { customCode: 1230, message: "Group leader email is missing.", statusCode: 400 },
     INVALID_GROUP_LEADER: { customCode: 1231, message: "Group leader not found.", statusCode: 404 },
     ORG_INVALIED:{ customCode: 1232, message: "Group member is creator of event.", statusCode: 403 },
+    MEMBER_BRANCH_INVALIED:{ customCode: 1233, message: "Group member branch invalied.", statusCode: 400 },
+    LESS_GIRL: { customCode: 1234, message: "Group member have less girl.", statusCode: 400 },
     
     QR_CODE_GENERATION_FAILED: { customCode: 1275, message: "QR code generation failed.", statusCode: 500 },
-    GROUP_CREATION_FAILED: { customCode: 1276, message: "Failed to create group.", statusCode: 500 }
+    GROUP_CREATION_FAILED: { customCode: 1276, message: "Failed to create group.", statusCode: 500 },
+
+    TRY_TO_CHANGE_REQ_BODY : {customCode:1277 , message:"Hello Heacker. :)" , statusCode:500}
 });
 
 

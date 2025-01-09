@@ -2,6 +2,7 @@ exports.EventError = Object.freeze({
     INVALID_EVENT_ID: { customCode: 1101, message: "Invalid event ID.", statusCode: 400 },
     EVENT_NOT_FOUND: { customCode: 1102, message: "Event not found.", statusCode: 404 },
     EVENT_FULL: { customCode: 1103, message: "Event is full.", statusCode: 400 },
+    INVALID_BRANCH:{ customCode: 1104, message: "Event invalied branch.", statusCode: 400 },
 
     CREATOR_NOT_FOUND: { customCode: 1110, message: "Invalid creator.", statusCode: 404 },
     CREATOR_ROLE_INVALID: { customCode: 1111, message: "Creator role is invalid.", statusCode: 403 },
