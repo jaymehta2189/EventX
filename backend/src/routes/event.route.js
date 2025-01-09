@@ -8,6 +8,6 @@ const {checkForOrg} = require("../middleware/check.js");
 router.post("/freelocation",checkForAuth,checkForOrg,eventController.FreeLocationFromTime);
 router.post("/create",checkForAuth,checkForOrg,eventController.createEvent);
 router.get("/",eventController.findAllEvent);
-router.get("/:id",eventController.viewEvent);
+router.get("/view/:id",eventController.viewEvent);
 
 module.exports=router;

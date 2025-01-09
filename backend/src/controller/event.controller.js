@@ -7,6 +7,9 @@ const moment = require("moment-timezone");
 const { EventError , EventSuccess} = require("../utils/Constants/Event");
 const User = require("../models/user.model");
 
+function isundefine(variable) {
+    return typeof variable === 'undefined';
+}
 // this use for check event is full or not
 // give timelimit and userlimit
 // function checkEventFull(req, res, next) {
@@ -61,15 +64,25 @@ async function validateDate (startDate,endDate){
     if(!istEndDate.isAfter(istStartDate)){
         throw new ApiError(EventError.INVALID_END_DATE);
     }
-
     return { istStartDate , istEndDate};
 };
 
 async function validateBranch(branchs) {
     const setOfBranch  = [...new Set(branchs)];
-    if(!setOfBranch.every( branch => Event.allowBranch.includes(branch))){
+    if(!setOfBranch.every( branch => [...User.Branches,'all'].includes(branch))){
         throw new ApiError(EventError.INVALID_BRANCH);
     };
+    return setOfBranch;
+}
+
+async function validateLimit(userLimit, girlCount) {
+    if(!Number.isInteger(userLimit) || !Number.isInteger(girlCount)){
+        throw new ApiError(EventError.INVALID_LIMIT);
+    }
+
+    if(userLimit < girlCount){
+        throw new ApiError(EventError.INVALID_GIRL_LIMIT);
+    }
 }
 
 // give free location
@@ -110,7 +123,7 @@ const FreeLocationFromTime = asyncHandler(async (req, res) => {
         }
     ];
 
-    const result = await Event.aggregate(FreeLocationPipeline).lean();
+    const result = await Event.aggregate(FreeLocationPipeline).exec();
 
     // Handle the case where no events exist in the database
     const FreeLocation =
@@ -147,24 +160,39 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
 
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit ,branchs , girlMinLimit} = req.body;
-    
-    if (!name || !startDate || !endDate || !location || !category || !pricePool || !description || !groupLimit || !userLimit || !girlMinLimit) {
+    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit ,branchs , girlMinLimit , avatar} = req.body;
+    console.log("ndfkjngf,")
+    console.log(name , startDate , endDate , location , category ,pricePool ,description ,girlMinLimit ,groupLimit , userLimit ,branchs)
+
+    if ([name,startDate,endDate,location,category,pricePool,description,groupLimit,userLimit,girlMinLimit].some(f => isundefine(f))) {
         throw new ApiError(EventError.PROVIDE_ALL_FIELDS);
     }
 
-    const [_, __, { istStartDate, istEndDate }] = await Promise.all([
+    console.log("ngbkjnjf")
+
+    const [setOfBranch , _, { istStartDate, istEndDate }] = await Promise.all([
         validateBranch(branchs),
         validateSameNameEvent(name),
         validateDate(startDate, endDate),
         validateCategory(category),
+        validateLimit(userLimit,girlMinLimit)
     ]);
 
+    console.log("nkjlgkj");
+
+    if (req.files && req.files.avatar) {
+        const localFilePath = req.files.avatar.path;
+        avatar = await uploadOnCloudinary(localFilePath);
+    }
+
+    console.log("1111111111");
+    console.log(setOfBranch);
     try {
 
+        console.log(req.user._id);
         const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
-
-        const event = await Event.collection.insertOne({
+        console.log("22222222222")
+        const event = await Event.create({
             name,
             startDate : istStartDate.toDate(),
             endDate : istEndDate.toDate(),
@@ -181,6 +209,7 @@ const createEvent = asyncHandler(async (req, res) => {
             timeLimit
         });
 
+        
         console.log(event);
         
         return res
@@ -231,7 +260,7 @@ const findAllEvent = asyncHandler(async (req, res) => {
                     avatar: 1
                 }
             }
-        ]).lean();
+        ]).exec();
 
         // if(!events || events.length === 0){
         //     throw new ApiError(404, "No events found");

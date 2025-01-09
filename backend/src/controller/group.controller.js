@@ -37,14 +37,22 @@ async function validateAllowBranch(users, allowBranch) {
     if (!userBranch.every(branch => allowBranch.includes(branch))) {
         throw new ApiError(GroupError.MEMBER_BRANCH_INVALIED);
     }
+
 }
 
 async function validateGirlCount(users, minGirlCount) {
     const groupGirlCount = users.reduce((count, user) => {
         return user.gender === 'female' ? count + 1 : count;
     }, 0);
+    console.log(groupGirlCount, minGirlCount)
     if (groupGirlCount < minGirlCount) {
         throw new ApiError(GroupError.LESS_GIRL);
+    }
+}
+
+async function validateUserLimit(userCount, Limit) {
+    if (userCount > Limit) {
+        throw new ApiError(GroupError.GROUP_LIMIT_EXCEEDED);
     }
 }
 
@@ -63,21 +71,21 @@ async function validateMemberRole(eventId, MemeberEmails) {
         {
             $lookup: {
                 from: "events", // Replace with the actual Event collection name
-                localField: null, // No direct relationship between User and Event
-                foreignField: "_id",
-                as: "eventDetails",
+                let: { eventId: new mongoose.Types.ObjectId(eventId) }, // Pass the eventId
                 pipeline: [
-                    { $match: { _id: new mongoose.Types.ObjectId(eventId) } },
-                    { $project: { allowBranch: 1, girlMinLimit: 1 } },
+                    { $match: { $expr: { $eq: ["$_id", "$$eventId"] } } }, // Match using the variable
+                    { $project: { allowBranch: 1, girlMinLimit: 1, userLimit: 1 } }, // Select specific fields
                 ],
+                as: "eventDetails",
             },
         },
         {
             $addFields: {
-                eventDetails: { $arrayElemAt: ["$eventDetails", 0] },
+                eventDetails: { $arrayElemAt: ["$eventDetails", 0] }, // Flatten the eventDetails array
             },
         },
-    ]).lean();
+    ]).exec();
+
 
 
     if (data.length === 0 || !data[0].eventDetails) {
@@ -98,6 +106,7 @@ async function validateMemberRole(eventId, MemeberEmails) {
         validateCreatorOrgNotJoinEvent(eventId, users, allowedRoles[1]),
         validateAllowBranch(users, event.allowBranch),
         validateGirlCount(users, event.girlMinLimit),
+        validateUserLimit(users.length, event.userLimit)
     ];
 
     await Promise.all(validationPromises);
@@ -108,7 +117,8 @@ async function validateMemberRole(eventId, MemeberEmails) {
 
 // Leader is Validate
 async function validateGroupLeader(groupLeaderEmail, validMemberEmail) {
-    if (validMemberEmail.include(groupLeaderEmail))
+
+    if (validMemberEmail.includes(groupLeaderEmail))
         return await User.findOne({ email: groupLeaderEmail }).select("_id").lean();
 
     throw new ApiError(GroupError.TRY_TO_CHANGE_REQ_BODY);
@@ -140,7 +150,7 @@ const createGroup = asyncHandler(async (req, res) => {
 
     try {
 
-        const group = await Group.collection.insertOne({
+        const group = await Group.create({
             name,
             groupLeader: validatedLeader,
             event,
@@ -157,14 +167,14 @@ const createGroup = asyncHandler(async (req, res) => {
             }
         }));
 
-        await Promise.all([
-            User_Group_Join.bulkWrite(userGroupJoinOperations, { session }),
-            Event.findByIdAndUpdate(
-                { _id: new mongoose.Types.ObjectId(event) },
-                { $inc: { joinGroup: 1 } },
-                { session }
-            ),
-        ]);
+        await User_Group_Join.bulkWrite(userGroupJoinOperations, { session });
+
+        // Increment joinGroup in Event
+        await Event.findByIdAndUpdate(
+            { _id: new mongoose.Types.ObjectId(event) },
+            { $inc: { joinGroup: 1 } },
+            { session }
+        );
 
         await session.commitTransaction();
 

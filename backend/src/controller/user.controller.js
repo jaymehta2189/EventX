@@ -11,23 +11,6 @@ const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const Unsafe_User = require("../models/unsafe_user.model.js");
 const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 
-async function findByIdAndUpdate(id, { sem, rollno, contactdetails }) {
-    console.log("Searching for user with id:", id);
-
-    const user = await User.findById(id); // Match by _id
-    console.log("Found user:", user);
-    if (!user) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
-
-    user.sem = sem;
-    user.rollno = rollno;
-    user.contactdetails = contactdetails;
-    await user.save(); // save() will now work
-    return user;
-}
-
-
 // input email should be tolower and trim
 async function validateEmail (email) {
 
@@ -158,7 +141,7 @@ const signupPost = asyncHandler(async (req, res) => {
     try {
         // for user role 
         // if (role === User.allowedRoles[0]) {
-            await User.collection.insertOne({
+            await User.create({
                 name,
                 email,
                 password,
@@ -265,7 +248,7 @@ const HodViewORG = asyncHandler(async (req, res) => {
             }
         ];
 
-        const Orgs = await User.aggregate(pipeline).lean();
+        const Orgs = await User.aggregate(pipeline).exec();
 
         return res
             .status(UserSuccess.HOD_UNORG_VIEW.statusCode)

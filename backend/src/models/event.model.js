@@ -36,11 +36,7 @@ const event = new Schema({
     userLimit: {
         type: Number,
         required: true,
-        min: [1, 'Event:: {VALUE} must be a positive number'],
-        validate: {
-            validator: (value) => Number.isInteger(value),
-            message: `Event::{VALUE} UserLimit must be an integer`
-        }
+        min: [1, 'Event:: {VALUE} must be a positive number']
     },
     allowBranch:[
         {
@@ -51,13 +47,7 @@ const event = new Schema({
     ],
     girlMinLimit:{
         type: Number,
-        default:0,
-        validate:{
-            validator: (value) =>{
-                return this.userLimit >= girlMinLimit;
-            },
-            message: `Event::{VALUE} girl Limit greater then user Limit`
-        }
+        default:0
     },
     allowBranch:{
         type: [String],
