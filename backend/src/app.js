@@ -47,7 +47,7 @@ app.use((err,req,res,next)=>{
             data: err.data,
         });
     } else {
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({ message: "Internal Server Error" , info : err.message});
     }
 });
 

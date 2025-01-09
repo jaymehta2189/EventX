@@ -42,6 +42,10 @@ const user = new Schema({
         lowercase:true,
         index:true
     },
+    gender:{
+        type:String,
+        enum:['male','female']
+    },
     role:{
         type:String,
         required:true,

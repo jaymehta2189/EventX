@@ -3,14 +3,15 @@ function checkForAuth(req, res, next) {
     const cookieName = "token";
     console.log( req.header("Authorization")?.replace("Bearer ",""));
     const cookietoken = req.cookies[cookieName] || req.header("Authorization")?.replace("Bearer ","");
-    // console.log("Token received:", cookietoken);
+
     if (!cookietoken) {
         return res.status(401).json({
             msg: "Unauthorization request"
         });
     }
+    
     const decodedValue = verifyToken(cookietoken);
-    // console.log("Decoded token:", decodedValue);
+
     if (decodedValue) {
         req.user = decodedValue;
         next();

@@ -36,11 +36,7 @@ const event = new Schema({
     userLimit: {
         type: Number,
         required: true,
-        min: [1, 'Event:: {VALUE} must be a positive number'],
-        validate: {
-            validator: (value) => Number.isInteger(value),
-            message: `Event::{VALUE} UserLimit must be an integer`
-        }
+        min: [1, 'Event:: {VALUE} must be a positive number']
     },
     allowBranch:[
         {
@@ -49,6 +45,15 @@ const event = new Schema({
             enum: User.allowBranch
         }
     ],
+    girlMinLimit:{
+        type: Number,
+        default:0
+    },
+    allowBranch:{
+        type: [String],
+        required:true,
+        enum: [...User.Branches,'all']
+    },
     startDate: {
         type: Date,
         required: true,
@@ -106,6 +111,8 @@ const event = new Schema({
 event.statics.allowCategory = event.path('category').enumValues;
 // event.static.allowLocation = event.obj.location.enum;
 event.statics.allowLocation = event.path('location').enumValues;
+
+event.statics.allowBranch = event.path('allowBranch').enumValues;
 
 const Event = mongoose.model("Event", event);
 module.exports=Event;

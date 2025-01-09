@@ -11,23 +11,6 @@ const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const Unsafe_User = require("../models/unsafe_user.model.js");
 const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 
-async function findByIdAndUpdate(id, { sem, rollno, contactdetails }) {
-    console.log("Searching for user with id:", id);
-
-    const user = await User.findById(id); // Match by _id
-    console.log("Found user:", user);
-    if (!user) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
-
-    user.sem = sem;
-    user.rollno = rollno;
-    user.contactdetails = contactdetails;
-    await user.save(); // save() will now work
-    return user;
-}
-
-
 // input email should be tolower and trim
 async function validateEmail (email) {
 
@@ -68,7 +51,7 @@ const getUsersByEmails = async ({ emails, fields = null }) => {
         throw new ApiError(UserError.INVALID_EMAIL);
     }
 
-    const users = await User.find({ email: { $in: emails } }).select(fields);
+    const users = await User.find({ email: { $in: emails } }).select(fields).lean();
 
     console.log(users);
 
@@ -88,7 +71,7 @@ const getUserByEmail = async ({ email, fields = null }) => {
     if (!email || typeof email !== "string") {
         throw new ApiError(UserError.INVALID_EMAIL);
     }
-    const user = await User.findOne({ email }).select(fields);
+    const user = await User.findOne({ email }).select(fields).lean();
 
     if (!user) {
         throw new ApiError(UserError.USER_NOT_FOUND, email);
@@ -134,7 +117,7 @@ const sendOTP = asyncHandler(async (req, res) => {
     let otp;
     do {
         otp = otpGenerator.generate(6, { upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false });
-    } while (await OTP.findOne({ otp }));
+    } while (await OTP.findOne({ otp }).select("otp").lean());
 
     await OTP.create({ email, otp });
 
@@ -172,7 +155,7 @@ const signupPost = asyncHandler(async (req, res) => {
                 .json(new ApiResponse(UserSuccess.USER_CREATED, { email, role, name }));
         // }
 
-        // await Unsafe_User.create({
+        // await Unsafe_User.collection.insertOne({
         //     name,
         //     email,
         //     password,
@@ -200,7 +183,7 @@ const AdminViewForHOD = asyncHandler(async (req, res) => {
     try {
         const Hods = await Unsafe_User.find({
             role: User.allowedRoles[2]
-        }).select("_id name email branch");
+        }).select("_id name email branch").lean();
 
         return res
             .status(UserSuccess.ADMIN_UNHOD_VIEW.statusCode)
@@ -217,7 +200,7 @@ const AdminViewForORG = asyncHandler(async (req, res) => {
     try {
         const Orgs = await Unsafe_User.find({
             role: User.allowedRoles[1]
-        }).select("_id name email branch");
+        }).select("_id name email branch").lean();
 
         return res
             .status(UserSuccess.ADMIN_UNORG_VIEW.statusCode)

@@ -5,7 +5,11 @@ const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const { EventError , EventSuccess} = require("../utils/Constants/Event");
+const User = require("../models/user.model");
 
+function isundefine(variable) {
+    return typeof variable === 'undefined';
+}
 // this use for check event is full or not
 // give timelimit and userlimit
 // function checkEventFull(req, res, next) {
@@ -39,9 +43,9 @@ const { EventError , EventSuccess} = require("../utils/Constants/Event");
 // name should be trim or lowercase
 async function validateSameNameEvent (name){
 
-    const existEvent = await Event.find({ name });
+    const existEvent = await Event.findOne({ name }).select("_id").lean();
     
-    if (existEvent.length>0) {
+    if (existEvent) {
         throw new ApiError(EventError.SAME_NAME);
     }
 
@@ -60,15 +64,32 @@ async function validateDate (startDate,endDate){
     if(!istEndDate.isAfter(istStartDate)){
         throw new ApiError(EventError.INVALID_END_DATE);
     }
-
     return { istStartDate , istEndDate};
 };
+
+async function validateBranch(branchs) {
+    const setOfBranch  = [...new Set(branchs)];
+    if(!setOfBranch.every( branch => [...User.Branches,'all'].includes(branch))){
+        throw new ApiError(EventError.INVALID_BRANCH);
+    };
+    return setOfBranch;
+}
+
+async function validateLimit(userLimit, girlCount) {
+    if(!Number.isInteger(userLimit) || !Number.isInteger(girlCount)){
+        throw new ApiError(EventError.INVALID_LIMIT);
+    }
+
+    if(userLimit < girlCount){
+        throw new ApiError(EventError.INVALID_GIRL_LIMIT);
+    }
+}
 
 // give free location
 const FreeLocationFromTime = asyncHandler(async (req, res) => {
     const { startDate, endDate } = req.body;
-    const allowLocation = Event.allowLocation; // Assuming this is an array of allowed locations
-    console.log(allowLocation);
+    const allowLocation = Event.allowLocation;
+
     const istStartDate = moment.tz(startDate, "Asia/Kolkata").toDate();
     const istEndDate = moment.tz(endDate, "Asia/Kolkata").toDate();
 
@@ -132,36 +153,45 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
         throw new ApiError(EventError.CREATOR_NOT_FOUND , orgId);
     }
 
-    const events = await Event.find({ creator: orgId }).select(fields);
+    const events = await Event.find({ creator: orgId }).select(fields).lean();
     
     return events;
 };
 
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit,avatar } = req.body;
-    // console.log("hello")
-    if (!name || !startDate || !endDate || !location || !category || !pricePool || !description || !groupLimit || !userLimit) {
+    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit ,branchs , girlMinLimit , avatar} = req.body;
+    console.log("ndfkjngf,")
+    console.log(name , startDate , endDate , location , category ,pricePool ,description ,girlMinLimit ,groupLimit , userLimit ,branchs)
+
+    if ([name,startDate,endDate,location,category,pricePool,description,groupLimit,userLimit,girlMinLimit].some(f => isundefine(f))) {
         throw new ApiError(EventError.PROVIDE_ALL_FIELDS);
     }
-    // console.log("hello1")
-    await validateSameNameEvent(name);
-    // console.log("hello")
-    const { istStartDate , istEndDate } = await validateDate(startDate,endDate);
-    // console.log("hello")
-    await validateCategory(category);
-    // console.log("hello")
-    console.log("hello");
+
+    console.log("ngbkjnjf")
+
+    const [setOfBranch , _, { istStartDate, istEndDate }] = await Promise.all([
+        validateBranch(branchs),
+        validateSameNameEvent(name),
+        validateDate(startDate, endDate),
+        validateCategory(category),
+        validateLimit(userLimit,girlMinLimit)
+    ]);
+
+    console.log("nkjlgkj");
+
     if (req.files && req.files.avatar) {
-        const localFilePath = req.files.avatar.path; // Assuming the file is being uploaded using a library like 'express-fileupload'
+        const localFilePath = req.files.avatar.path;
         avatar = await uploadOnCloudinary(localFilePath);
     }
-    console.log(avatar);
 
+    console.log("1111111111");
+    console.log(setOfBranch);
     try {
 
+        console.log(req.user._id);
         const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
-
+        console.log("22222222222")
         const event = await Event.create({
             name,
             startDate : istStartDate.toDate(),
@@ -173,10 +203,15 @@ const createEvent = asyncHandler(async (req, res) => {
             groupLimit,
             userLimit,
             description,
+            girlMinLimit,
+            allowBranch:setOfBranch,
             creator:req.user._id,
             timeLimit
         });
+
+        
         console.log(event);
+        
         return res
             .status(EventSuccess.EVENT_CREATED.statusCode)
             .json(new ApiResponse(EventSuccess.EVENT_CREATED, {id:event._id}));
@@ -243,8 +278,10 @@ const findAllEvent = asyncHandler(async (req, res) => {
 // .../:id
 const viewEvent= asyncHandler(async (req, res) => {
     const id = req.params.id;
+
     const event = await Event.findById({_id:new mongoose.Types.ObjectId(id)})
-            .select("_id name avatar startDate endDate location category pricePool description creator");
+            .select("-winnerGroup -timeLimit -creator -__v")
+            .lean();
 
     if (!event) {
         throw new ApiError(EventError.EVENT_NOT_FOUND);
