@@ -6,9 +6,7 @@ const event = new Schema({
         type: String,
         required: true,
         trim: true,
-        lowercase: true,
-        unique: true,
-        index: true
+        unique: true
     },
     avatar: {
         type: String,
@@ -38,13 +36,6 @@ const event = new Schema({
         required: true,
         min: [1, 'Event:: {VALUE} must be a positive number']
     },
-    allowBranch:[
-        {
-            type: String,
-            required:false,
-            enum: User.allowBranch
-        }
-    ],
     girlMinLimit:{
         type: Number,
         default:0
@@ -52,7 +43,8 @@ const event = new Schema({
     allowBranch:{
         type: [String],
         required:true,
-        enum: [...User.Branches,'all']
+        enum: [...User.Branches ,'all']
+        // enum: ['it','ce','ec','ch', 'all']
     },
     startDate: {
         type: Date,
@@ -67,8 +59,7 @@ const event = new Schema({
     location: {
         type: String,
         required: true,
-        index: true,
-        enum:['MMH','Seminar Hall','Center foyer','Canteen','Narayan Bhavan']
+        enum:['MMH','Seminar Hall','Center foyer','Canteen','Narayan Bhavan','Online']
     },
     category: {
         type: String,
@@ -77,7 +68,7 @@ const event = new Schema({
         lowercase: true,
         enum: ['technology', 'sports', 'education']
     },
-    creator: {
+    creater: {
         type: Schema.Types.ObjectId,
         ref: "User",
         required: true

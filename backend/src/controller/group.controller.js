@@ -6,33 +6,53 @@ const Group = require("../models/group.model");
 const User = require("../models/user.model");
 const Event = require("../models/event.model");
 const User_Group_Join = require("../models/User_Group_Join.model");
+const User_Event_Join = require("../models/User_Event_Join.model");
 const { GroupError, GroupSuccess } = require("../utils/Constants/Group");
+const UserController = require("./user.controller")
 
+const RedisClient = require("../service/configRedis");
+const cacheData = require("../service/cacheData");
 
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
 
-    const existSameNameGroupInEvent = await Group.findOne({ event: new mongoose.Types.ObjectId(eventId), name: groupName }).select("_id").lean();
+    const existSameNameGroupInEvent =
+        await Group.findOne({ event: new mongoose.Types.ObjectId(eventId), name: groupName }).select("_id").lean();
 
     if (existSameNameGroupInEvent) {
         throw new ApiError(GroupError.SAME_GROUP_EXSIST);
     }
 };
 
-async function validateCreatorOrgNotJoinEvent(eventId, users, role) {
+async function validateCreaterOfEventNotJoinEvent(EventCreater, users, role) {
     const OrgUser = users
         .filter(user => user.role == role)
         .map(user => user._id);
 
-    const NotallowOrg = await Event.findOne({ _id: new mongoose.Types.ObjectId(eventId), creator: { $in: OrgUser } }).select("_id").lean();
+    // const NotallowOrg = await Event.findOne({ _id: new mongoose.Types.ObjectId(eventId), creater: { $in: OrgUser } }).select("_id").lean();
 
-    if (NotallowOrg) {
+    if (OrgUser.includes(EventCreater)) {
         throw new ApiError(GroupError.ORG_INVALIED);
     }
 }
 
+async function validateUserJoinSameEventBefore(eventId, users) {
+    const Key = `Event:Join:users:${eventId}`;
+
+    for (const user of users) {
+        if (await RedisClient.sismember(Key, user._id)) {
+            throw new ApiError(GroupError.USER_ALREADY_JOIN);
+        }
+    }
+    // const FindAnyOneUserThatReadyJoinSameEvent = await User_Event_Join.findOne({ Event: eventId, Member: { $in: UserIds } }).select("_id").lean();
+}
+
 async function validateAllowBranch(users, allowBranch) {
     const userBranch = users.map(u => u.branch);
+
+    if (allowBranch == "all") {
+        return;
+    }
 
     if (!userBranch.every(branch => allowBranch.includes(branch))) {
         throw new ApiError(GroupError.MEMBER_BRANCH_INVALIED);
@@ -40,11 +60,12 @@ async function validateAllowBranch(users, allowBranch) {
 
 }
 
-async function validateGirlCount(users, minGirlCount) {
+async function validateGirlCount(minGirlCount, users) {
+
     const groupGirlCount = users.reduce((count, user) => {
         return user.gender === 'female' ? count + 1 : count;
     }, 0);
-    console.log(groupGirlCount, minGirlCount)
+
     if (groupGirlCount < minGirlCount) {
         throw new ApiError(GroupError.LESS_GIRL);
     }
@@ -59,61 +80,26 @@ async function validateUserLimit(userCount, Limit) {
 async function validateMemberRole(eventId, MemeberEmails) {
     const allowedRoles = User.allowedRoles;
 
-    console.log(allowedRoles);
+    const eventSTR = await RedisClient.call('JSON.GET', `Event:FullData:${eventId}`, '$');
+    const event = JSON.parse(eventSTR)[0];
+    const users = await cacheData.GetUserDataFromEmail(...MemeberEmails);
 
-    const data = await User.aggregate([
-        {
-            $match: {
-                email: { $in: MemeberEmails },
-                role: { $in: allowedRoles },
-            },
-        },
-        {
-            $lookup: {
-                from: "events", // Replace with the actual Event collection name
-                let: { eventId: new mongoose.Types.ObjectId(eventId) }, // Pass the eventId
-                pipeline: [
-                    { $match: { $expr: { $eq: ["$_id", "$$eventId"] } } }, // Match using the variable
-                    { $project: { allowBranch: 1, girlMinLimit: 1, userLimit: 1 } }, // Select specific fields
-                ],
-                as: "eventDetails",
-            },
-        },
-        {
-            $addFields: {
-                eventDetails: { $arrayElemAt: ["$eventDetails", 0] }, // Flatten the eventDetails array
-            },
-        },
-    ]).exec();
-
-
-
-    if (data.length === 0 || !data[0].eventDetails) {
-        throw new ApiError(GroupError.INVALID_EVENT);
+    if (users.length !== MemeberEmails.length) {
+        throw new ApiError(GroupError.INVALID_MEMBER_EMAIL)
     }
 
-    const users = data.map((item) => ({
-        _id: item._id,
-        email: item.email,
-        role: item.role,
-        branch: item.branch,
-        gender: item.gender,
-    }));
-
-    const event = data[0].eventDetails;
-
     const validationPromises = [
-        validateCreatorOrgNotJoinEvent(eventId, users, allowedRoles[1]),
+        validateCreaterOfEventNotJoinEvent(event.creater, users, allowedRoles[1]),
         validateAllowBranch(users, event.allowBranch),
-        validateGirlCount(users, event.girlMinLimit),
-        validateUserLimit(users.length, event.userLimit)
+        validateGirlCount(event.minGirlCount, users),
+        validateUserLimit(users.length, event.userLimit),
+        validateUserJoinSameEventBefore(eventId, users)
     ];
 
     await Promise.all(validationPromises);
 
     return users.map((u) => u._id);
 }
-
 
 // Leader is Validate
 async function validateGroupLeader(groupLeaderEmail, validMemberEmail) {
@@ -150,31 +136,53 @@ const createGroup = asyncHandler(async (req, res) => {
 
     try {
 
-        const group = await Group.create({
+        const groupArray = await Group.create([{
             name,
             groupLeader: validatedLeader,
             event,
             timeLimit
-        });
+        }], { session });
 
-        const userGroupJoinOperations = validMemberId.map(member => ({
-            insertOne: {
-                document: {
-                    Group: group._id,
-                    Member: member,
-                    timeLimit
-                }
-            }
+        const group = groupArray[0];
+
+        const userGroupJoinDocuments = validMemberId.map(member => ({
+            Group: group._id,
+            Member: member,
+            timeLimit
         }));
 
-        await User_Group_Join.bulkWrite(userGroupJoinOperations, { session });
+        const userEventJoinDocuments = validMemberId.map(member => ({
+            Event: event,
+            Member: member,
+            timeLimit
+        }));
+
+        // Perform insertMany for both collections in parallel
+        await Promise.all([
+            User_Group_Join.insertMany(userGroupJoinDocuments, { session }),
+            User_Event_Join.insertMany(userEventJoinDocuments, { session })
+        ]);
 
         // Increment joinGroup in Event
-        await Event.findByIdAndUpdate(
+        const count = await Event.findByIdAndUpdate(
             { _id: new mongoose.Types.ObjectId(event) },
             { $inc: { joinGroup: 1 } },
-            { session }
+            { session, new: true }
         );
+
+        const pipeline = RedisClient.pipeline();
+        pipeline.sadd(`Event:Join:groups:${event}`, group._id);
+        pipeline.sadd(`Event:Join:users:${event}`, ...validMemberId);
+        pipeline.call('JSON.SET', `Event:FullData:${event}`, '$.joinGroup', count.joinGroup);
+        await pipeline.exec();
+        cacheData.cacheGroupJoinUser(
+            {
+                id: group._id,
+                event: event,
+                JoinUserId: validMemberId
+            }
+        );
+        cacheData.cacheGroup(group);
 
         await session.commitTransaction();
 
@@ -195,6 +203,8 @@ const createGroup = asyncHandler(async (req, res) => {
         session.endSession();
     }
 });
+
+
 
 module.exports = {
     createGroup

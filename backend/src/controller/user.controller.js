@@ -7,12 +7,15 @@ const OTP = require("../models/otp.model");
 const otpGenerator = require("otp-generator");
 const Group = require("../models/group.model.js");
 
+const RedisClient = require("../service/configRedis.js")
+const cacheData = require("../service/cacheData.js")
 const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const Unsafe_User = require("../models/unsafe_user.model.js");
 const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 
+
 // input email should be tolower and trim
-async function validateEmail (email) {
+async function validateEmail(email) {
 
     if (!email) {
         throw new ApiError(UserError.MISSING_EMAIL);
@@ -36,47 +39,20 @@ const verifyOTP = async function (email, otp) {
         throw new ApiError(UserError.MISSING_FIELDS);
     }
 
+    const SaveOTP = await RedisClient.get(`OTP:${email}`);
+
+    if (SaveOTP) {
+        if (SaveOTP.length === 0 || otp !== SaveOTP) {
+            throw new ApiError(UserError.INVALID_OTP);
+        }
+        return;
+    }
+
     const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
 
     if (response.length === 0 || otp !== response[0].otp) {
         throw new ApiError(UserError.INVALID_OTP);
     }
-};
-
-// call this function
-// input emails should be tolower and trim
-const getUsersByEmails = async ({ emails, fields = null }) => {
-
-    if (!emails || !Array.isArray(emails) || emails.length === 0) {
-        throw new ApiError(UserError.INVALID_EMAIL);
-    }
-
-    const users = await User.find({ email: { $in: emails } }).select(fields).lean();
-
-    console.log(users);
-
-    if (users.length !== emailtrim.length) {
-        const foundEmails = users.map((u) => u.email);
-        const missingEmails = emailtrim.filter((email) => !foundEmails.includes(email));
-        throw new ApiError(UserError.USER_NOT_FOUND, missingEmails);
-    }
-
-    return users;
-};
-
-// call this function
-// input email should be tolower and trim
-const getUserByEmail = async ({ email, fields = null }) => {
-
-    if (!email || typeof email !== "string") {
-        throw new ApiError(UserError.INVALID_EMAIL);
-    }
-    const user = await User.findOne({ email }).select(fields).lean();
-
-    if (!user) {
-        throw new ApiError(UserError.USER_NOT_FOUND, email);
-    }
-    return user;
 };
 
 // email is trim or lowerCase
@@ -109,7 +85,7 @@ const logout = asyncHandler((req, res) => {
 // input email should be tolower and trim
 const sendOTP = asyncHandler(async (req, res) => {
     const email = req.body.email;
-    
+
     await validateEmail(email);
 
     let otp;
@@ -118,6 +94,10 @@ const sendOTP = asyncHandler(async (req, res) => {
     } while (await OTP.findOne({ otp }).select("otp").lean());
 
     await OTP.create({ email, otp });
+
+    await RedisClient.set(`OTP:${email}`, otp);
+
+    await RedisClient.expire(`OTP:${email}`, 300); // 5 min
 
     return res.status(UserSuccess.OTP_SENT.statusCode).json(new ApiResponse(UserSuccess.OTP_SENT, { email, otp }));
 });
@@ -141,16 +121,18 @@ const signupPost = asyncHandler(async (req, res) => {
     try {
         // for user role 
         // if (role === User.allowedRoles[0]) {
-            await User.create({
-                name,
-                email,
-                password,
-                role
-            });
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role
+        });
+        // const 
+        await cacheData.cacheUser(user);
 
-            return res
-                .status(UserSuccess.USER_CREATED.statusCode)
-                .json(new ApiResponse(UserSuccess.USER_CREATED, { email, role, name }));
+        return res
+            .status(UserSuccess.USER_CREATED.statusCode)
+            .json(new ApiResponse(UserSuccess.USER_CREATED, { email, role, name }));
         // }
 
         // await Unsafe_User.collection.insertOne({
@@ -217,33 +199,33 @@ const HodViewORG = asyncHandler(async (req, res) => {
         // not work it
         const pipeline = [
             {
-                $match:{
-                    _id : new mongoose.Types.ObjectId(req.user._id)
+                $match: {
+                    _id: new mongoose.Types.ObjectId(req.user._id)
                 }
             },
             {
-                $project:{
-                    branch:1
+                $project: {
+                    branch: 1
                 }
             },
             {
-                $lookup:{
-                    from:"unsafe_users",
+                $lookup: {
+                    from: "unsafe_users",
                     localField: User.allowedRoles[1],
-                    foreignField:"role",
-                    as:"users"
+                    foreignField: "role",
+                    as: "users"
                 }
             },
             {
-                $match:{
+                $match: {
                     "users.branch": "$branch"
                 }
             },
             {
-                $project:{
-                    "users._id":1,
-                    "users.name":1,
-                    "users.email":1
+                $project: {
+                    "users._id": 1,
+                    "users.name": 1,
+                    "users.email": 1
                 }
             }
         ];
@@ -266,7 +248,7 @@ const updateProfile = asyncHandler(async (req, res) => {
         console.log("hello");
         console.log("req.user:", req.user);
 
-        const user = await User.findByIdAndUpdate({_id:new mongoose.Types.ObjectId(req.user._id)}, { sem, rollno, contactdetails }).select("_id");
+        const user = await User.findByIdAndUpdate({ _id: new mongoose.Types.ObjectId(req.user._id) }, { sem, rollno, contactdetails }).select("_id");
         console.log("Updated user:", user);
 
         return res
@@ -278,20 +260,17 @@ const updateProfile = asyncHandler(async (req, res) => {
     }
 });
 
-
 module.exports = {
     validateEmail,
     updateProfile,
     verifyOTP,
-    getUserByEmail,
-    getUsersByEmails,
     signinPost,
     signupPost,
     sendOTP,
     logout,
 
     AdminViewForHOD,
-    AdminViewForORG
+    AdminViewForORG,
     // make for hod
 };
 

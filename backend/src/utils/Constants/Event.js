@@ -6,8 +6,8 @@ exports.EventError = Object.freeze({
     INVALID_LIMIT:{ customCode: 1105, message: "User Limit or Girl Limit must be intager.", statusCode: 400 },
     INVALID_GIRL_LIMIT:{ customCode: 1106, message: "User Limit < Girl Limit possibale ?.", statusCode: 400 },
 
-    CREATOR_NOT_FOUND: { customCode: 1110, message: "Invalid creator.", statusCode: 404 },
-    CREATOR_ROLE_INVALID: { customCode: 1111, message: "Creator role is invalid.", statusCode: 403 },
+    CREATER_NOT_FOUND: { customCode: 1110, message: "Invalid creater.", statusCode: 404 },
+    CREATER_ROLE_INVALID: { customCode: 1111, message: "creater role is invalid.", statusCode: 403 },
 
     PROVIDE_ALL_FIELDS: { customCode: 1112, message: "Please provide all the required fields.", statusCode: 400 },
     VALIDATION_ERROR: { customCode: 1113, message: "Validation error.", statusCode: 400 },

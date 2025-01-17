@@ -1,9 +1,11 @@
-const {Schema,model,mongoose}=require("mongoose")
-const tokendetails=require("../service/token.js")
+const { Schema, model, mongoose } = require("mongoose")
+const tokendetails = require("../service/token.js")
 const { createHmac, randomBytes } = require("crypto");
 const ApiError = require("../utils/ApiError.js");
 const { type } = require("os");
-const {UserError} = require("../utils/Constants/User.js");
+const { UserError } = require("../utils/Constants/User.js");
+const RedisClient = require("../service/configRedis.js");
+
 /**
  * User Schema:
  * - name: The name of the user.
@@ -30,80 +32,82 @@ const user = new Schema({
     avatar: {
         type: String,
         required: false,
-        default:"../../public/images/profile.png"
+        default: "../../public/images/profile.png"
     },
-    salt:{
-        type:String
+    salt: {
+        type: String
     },
-    branch:{
-        type:String,
-        required:false,
-        trim:true,
-        lowercase:true,
-        index:true
+    branch: {
+        type: String,
+        required: false,
+        trim: true,
+        lowercase: true
     },
-    gender:{
-        type:String,
-        enum:['male','female']
+    gender: {
+        type: String,
+        enum: ['male', 'female']
     },
-    role:{
-        type:String,
-        required:true,
-        default:"user",
-        index:true,
-        enum: ["user","org"]
+    role: {
+        type: String,
+        required: true,
+        default: "user",
+        enum: ["user", "org"]
     },
     password: {
         type: String,
         required: true,
-        minlength: 8 
+        minlength: 8
     },
-    sem:{
-        type:Number,
-        required:false,
+    sem: {
+        type: Number,
+        required: false,
     },
-    rollno:{
-        type:String,
-        required:false,
-        trim:true,
+    rollno: {
+        type: String,
+        required: false,
+        trim: true,
     },
-    contactdetails:{
-        type:Number,
-        required:false,
+    contactdetails: {
+        type: Number,
+        required: false,
     }
-    
+
 });
 
-user.pre("save",function (next){
-    const user=this;
+user.pre("save", function (next) {
+    const user = this;
     // auto generate branch from email
-    this.branch = user.email.substring(2,4).toLowerCase();
-    if(!user.isModified("password"))return;
-    const salt=randomBytes(16).toString();
-    
+    this.branch = user.email.substring(2, 4).toLowerCase();
+    if (!user.isModified("password")) return;
+    const salt = randomBytes(16).toString();
+
     const hashpassword = createHmac('sha256', salt)
-               .update(user.password)
-               .digest('hex');
-    this.salt=salt;
-    this.password=hashpassword;
+        .update(user.password)
+        .digest('hex');
+    this.salt = salt;
+    this.password = hashpassword;
     next();
 });
 
-user.static("matchPasswordAndGenerateToken",async function(email,password){
-    const user=await this.findOne({email});
-    if(!user){
+user.static("matchPasswordAndGenerateToken", async function (email, password) {
+    // const user=await this.findOne({email});
+    const {GetUserDataFromEmail} = require("../service/cacheData.js");
+
+    const user = (await GetUserDataFromEmail(email))[0];
+
+    if (!user) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
 
-    const salt=user.salt;
-    const originalpassword=user.password;
-    const userPass=createHmac("sha256",salt).update(password).digest("hex");
+    const salt = user.salt;
+    const originalpassword = user.password;
+    const userPass = createHmac("sha256", salt).update(password).digest("hex");
 
-    if(originalpassword!==userPass){
+    if (originalpassword !== userPass) {
         throw new ApiError(UserError.PASSWORD_MISMATCH);
     }
 
-    const token=tokendetails.createTokenForUser(user);
+    const token = tokendetails.createTokenForUser(user);
     return token;
 });
 
@@ -115,15 +119,15 @@ user.static("matchPasswordAndGenerateToken",async function(email,password){
 
 user.statics.allowedRoles = user.obj.role.enum;
 user.statics.emailPattern = /^\d{2}(it|ce|ec|ch)(uos|nsa)\d{3}@ddu\.ac\.in$/;
-function getAllBranchFromPattern(emailPattern){
+function getAllBranchFromPattern(emailPattern) {
     const match = emailPattern.toString().match(/\((.*?)\)/);
-  if (match && match[1]) {
-    return match[1].split('|');
-  }
-  return [];
+    if (match && match[1]) {
+        return match[1].split('|');
+    }
+    return [];
 }
 
 user.statics.Branches = getAllBranchFromPattern(user.statics.emailPattern);
 
 const User = mongoose.model("User", user);
-module.exports=User;
+module.exports = User;

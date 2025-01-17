@@ -36,8 +36,7 @@ const group = new Schema({
     event: {
         type: Schema.Types.ObjectId,
         ref: "Event",
-        required: true,
-        index: true
+        required: true
     },
     timeLimit:{
         type:Date,
