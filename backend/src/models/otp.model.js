@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const mailSender = require("../service/nodemailer");
+const {mailSender} = require("../service/nodemailer");
 const emailTemplate = require("../service/emailTemplate");
 
 const OTPSchema = new mongoose.Schema({
@@ -21,7 +21,7 @@ const OTPSchema = new mongoose.Schema({
 async function sendVerificationEmail(email, otp) {
     
     try {
-        await mailSender(
+        mailSender(
             email,
             "Verification Email",
             emailTemplate(otp)

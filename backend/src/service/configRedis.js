@@ -11,7 +11,6 @@ RedisClient.ClearRedisSync = async ()=>{
     }
 };
 
-
 RedisClient.ClearRedisAsync = async ()=>{
     try {
         const result = await RedisClient.call('FLUSHALL', 'ASYNC');

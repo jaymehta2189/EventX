@@ -13,29 +13,33 @@ app.use(express.urlencoded({ extended: false }));
 // app.use(express.static(path.resolve("../public")));
 app.use(express.static(path.resolve(__dirname, '../public')));
 // app.use(express.static(path.join(__dirname,"../public/images")));
+
+
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+    origin:"http://localhost:5173",
+    credentials:true
+}));
+
 app.use(fileUpload());
 
 const UserRouter = require("./routes/user.route.js");
 const EventRouter = require("./routes/event.route.js");
 const GroupRouter = require("./routes/group.route.js");
-const UserGroupJoinRouter = require("./routes/user_group_join.route.js");
-// const OrgRouter = require("./routes/org.route.js");
-// const au= require("./middleware/authentication.js");
+const RedisClient = require("./service/configRedis.js");
+const { exit } = require("process");
 
-// // app.use(checkForAuth("token"));
-// console.log("checkForAuth:", typeof au.checkForAuth);
+RedisClient.on('ready', async() => {
 
-(async () => {
+    console.log("Redis is ready to use");
     const cacheConfig = require("./service/cacheData.js");
-
     await cacheConfig.ClearAllCacheASYNC();
-
     const [EventCacheResult] = await Promise.all([
         cacheConfig.preCacheEvents(),
         cacheConfig.preCacheUser(),
-        cacheConfig.preCacheEventJOINGroupAndUser()
+        cacheConfig.preCacheEventJOINGroupAndUser(),
+        cacheConfig.preCacheUnsafeUser(),
+        cacheConfig.preCacheAuthority()
     ]);
 
     if (EventCacheResult) {
@@ -46,16 +50,17 @@ const UserGroupJoinRouter = require("./routes/user_group_join.route.js");
             ]
         );
     }
+    
+});
 
-})();
+RedisClient.on('error', (error) => {
+    console.log("Redis error: ", error);
+    exit(1);
+});
 
-// app.use(au.checkForAuth("token"));
 app.use("/api/v1/users", UserRouter);
 app.use("/api/v1/events", EventRouter);
 app.use("/api/v1/groups", GroupRouter);
-app.use("/api/v1/userjoin", UserGroupJoinRouter);
-// app.use("/api/v1/orgs",OrgRouter);
-
 
 app.use((err, req, res, next) => {
     if (err instanceof ApiError) {

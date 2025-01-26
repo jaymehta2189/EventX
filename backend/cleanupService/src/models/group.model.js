@@ -1,5 +1,4 @@
 const {Schema,model,mongoose}=require("mongoose")
-const { generateQRAndSaveAtCloudinary } = require("../utils/generateQR");
 
 /**
  * Group Schema:
@@ -49,16 +48,6 @@ const group = new Schema({
         unique:true,
         index:true
     }
-});
-
-group.pre('save', async function (next) {
-    // Logic to generate QR code
-    try{
-        this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/groups/group/qr/${this._id}`);
-    }catch(error){
-        throw new ApiError(GroupError.QR_CODE_GENERATION_FAILED);
-    }
-    next();
 });
 
  const Group = mongoose.model("Group", group);

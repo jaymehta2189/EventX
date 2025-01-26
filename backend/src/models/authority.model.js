@@ -98,7 +98,7 @@ authority.static("matchPasswordAndGenerateToken",async function(email,password){
 authority.statics.allowedRoles = authority.obj.role.enum;
 authority.statics.emailPattern = /^\d{2}(it|ce|ec|ch)(uos|nsa)\d{3}@ddu\.ac\.in$/;
 function getAllBranchFromPattern(emailPattern){
-    const match = pattern.toString().match(/\((.*?)\)/);
+    const match = emailPattern.toString().match(/\((.*?)\)/);
   if (match && match[1]) {
     return match[1].split('|');
   }

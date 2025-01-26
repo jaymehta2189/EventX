@@ -1,5 +1,4 @@
 const {Schema,mongoose}=require("mongoose");
-const User = require("./user.model");
 
 const event = new Schema({
     name: {
@@ -43,8 +42,8 @@ const event = new Schema({
     allowBranch:{
         type: [String],
         required:true,
-        enum: [...User.Branches ,'all']
-        // enum: ['it','ce','ec','ch', 'all']
+        // enum: [...User.Branches ,'all']
+        enum: ['it','ce','ec','ch', 'all']
     },
     startDate: {
         type: Date,
@@ -76,8 +75,7 @@ const event = new Schema({
     winnerGroup:{
         type: Schema.Types.ObjectId,
         ref: "Group",
-        required: false,
-        default: null
+        required: false
     },
     pricePool: {
         type: Number,
@@ -90,21 +88,5 @@ const event = new Schema({
         expires: 2 * 24 * 60 * 60 * 1000
     }
 });
-
-// event.pre('save', async function (next) {
-//     try {
-//         this.timeLimit=new Date(this.endDate.getTime() + 2 * 24 * 60 * 60 * 1000);
-//         next();
-//     } catch (error) {
-//         next(error); // Pass error to the next middleware
-//     }
-// });
-
-event.statics.allowCategory = event.path('category').enumValues;
-// event.static.allowLocation = event.obj.location.enum;
-event.statics.allowLocation = event.path('location').enumValues;
-
-event.statics.allowBranch = event.path('allowBranch').enumValues;
-
 const Event = mongoose.model("Event", event);
 module.exports=Event;

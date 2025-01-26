@@ -5,6 +5,7 @@ const ApiError = require("../utils/ApiError.js");
 const { type } = require("os");
 const { UserError } = require("../utils/Constants/User.js");
 const RedisClient = require("../service/configRedis.js");
+const { max } = require("moment-timezone");
 
 /**
  * User Schema:
@@ -61,6 +62,8 @@ const user = new Schema({
     sem: {
         type: Number,
         required: false,
+        min: 1,
+        max: 8
     },
     rollno: {
         type: String,
@@ -70,8 +73,11 @@ const user = new Schema({
     contactdetails: {
         type: Number,
         required: false,
+    },
+    access_token: {
+        type: String,
+        required: false
     }
-
 });
 
 user.pre("save", function (next) {
@@ -91,7 +97,7 @@ user.pre("save", function (next) {
 
 user.static("matchPasswordAndGenerateToken", async function (email, password) {
     // const user=await this.findOne({email});
-    const {GetUserDataFromEmail} = require("../service/cacheData.js");
+    const { GetUserDataFromEmail } = require("../service/cacheData.js");
 
     const user = (await GetUserDataFromEmail(email))[0];
 

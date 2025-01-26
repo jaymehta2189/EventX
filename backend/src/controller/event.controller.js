@@ -7,44 +7,22 @@ const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const { EventError, EventSuccess } = require("../utils/Constants/Event");
 
-
+const { getGroupDetails } = require("./group.controller");
 const RedisClient = require("../service/configRedis");
+const cacheData = require("../service/cacheData");
 const Group = require("../models/group.model");
-const User_Event_Join = require("../models/User_Event_Join.model");
 
 const cacheConfig = require("../service/cacheData");
+const json2csv = require('json2csv').parse;
+const fs = require('fs');
+const path = require('path');
+const { transporter } = require('nodemailer');
+const { uploadOnCloudinary } = require('../utils/cloudinary');
+const { isNumberObject } = require("util/types");
+
 function isundefine(variable) {
     return typeof variable === 'undefined';
 }
-// this use for check event is full or not
-// give timelimit and userlimit
-// function checkEventFull(req, res, next) {
-
-//     const eventId = req.params.id;
-
-//     if (!eventId || !mongoose.Types.ObjectId.isValid(eventId)) {
-//         throw new ApiError(EventError.INVALID_EVENT_ID);
-//     }
-
-//     const event = await Event.findById(eventId).select("joinGroup groupLimit");
-//     if (!event) {
-//         throw new ApiError(EventError.EVENT_NOT_FOUND);
-//     }
-//     const groupCount = await Group.countDocuments({ event: eventId });
-
-//     if (groupCount >= event.groupLimit) {
-//         throw new ApiError(EventError.EVENT_FULL);
-//     }
-
-//     return res
-//             .status(EventSuccess.EVENT_NOT_FULL.statusCode)
-//             .json(new ApiResponse(EventSuccess.EVENT_NOT_FULL,
-//                 {
-//                     timeLimit:event.timeLimit,
-//                     userLimit:event.userLimit
-//                 }
-//             ));
-// };
 
 async function SameNameInCache(EventName) {
     try {
@@ -125,7 +103,6 @@ async function validateLimit(userLimit, girlCount) {
         throw new ApiError(EventError.INVALID_GIRL_LIMIT);
     }
 }
-
 
 async function CacheFreeLocationFromTime(startDate, endDate) {
     const allowLocation = Event.allowLocation;
@@ -237,10 +214,10 @@ async function validateCategory(category) {
 
 const findAllEventsByOrgId = async function (orgId, fields = null) {
     if (!orgId || !mongoose.Types.ObjectId.isValid(orgId)) {
-        throw new ApiError(EventError.CREATER_NOT_FOUND, orgId);
+        throw new ApiError(EventError.CREATOR_NOT_FOUND, orgId);
     }
 
-    const events = await Event.find({ creater: orgId }).select(fields).lean();
+    const events = await Event.find({ creator: orgId }).select(fields).lean();
 
     return events;
 };
@@ -248,8 +225,6 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
     const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, branchs, girlMinLimit, avatar } = req.body;
-    console.log("ndfkjngf,")
-    console.log(name, startDate, endDate, location, category, pricePool, description, girlMinLimit, groupLimit, userLimit, branchs)
 
     if ([name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, girlMinLimit].some(f => isundefine(f))) {
         throw new ApiError(EventError.PROVIDE_ALL_FIELDS);
@@ -263,20 +238,13 @@ const createEvent = asyncHandler(async (req, res) => {
         validateLimit(userLimit, girlMinLimit)
     ]);
 
-    console.log("nkjlgkj");
-
     if (req.files && req.files.avatar) {
         const localFilePath = req.files.avatar.path;
         avatar = await uploadOnCloudinary(localFilePath);
     }
 
-    console.log("1111111111");
-    console.log(setOfBranch);
     try {
-
-        console.log(req.user._id);
         const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
-        console.log("22222222222");
 
         const event = await Event.create({
             name,
@@ -291,12 +259,9 @@ const createEvent = asyncHandler(async (req, res) => {
             description,
             girlMinLimit,
             allowBranch: setOfBranch,
-            creater: req.user._id,
+            creator: req.user._id,
             timeLimit
         });
-
-
-        console.log(event);
 
         cacheConfig.cacheEvent(event);
 
@@ -305,12 +270,10 @@ const createEvent = asyncHandler(async (req, res) => {
             .json(new ApiResponse(EventSuccess.EVENT_CREATED, { id: event._id }));
 
     } catch (error) {
-
         if (error.name === "ValidationError") {
             throw new ApiError(EventError.VALIDATION_ERROR, error.message);
         }
-        console.log(error.message);
-        throw new ApiError(EventError.EVENT_CREATION_FAILED, error.message); // Catch other errors
+        throw new ApiError(EventError.EVENT_CREATION_FAILED, error.message); 
     }
 });
 
@@ -342,7 +305,7 @@ const findAllEvent = asyncHandler(async (req, res) => {
                     startDate: 1,
                     endDate: 1,
                     description: 1,
-                    creater: 1,
+                    creator: 1,
                     location: 1,
                     category: 1,
                     avatar: 1
@@ -366,28 +329,36 @@ const findAllEvent = asyncHandler(async (req, res) => {
 // view event
 // .../:id
 const viewEvent = asyncHandler(async (req, res) => {
-    const id = req.params.id;
+    try {
+        const id = req.params.id;
 
-    // const event = await RedisClient.call('JSON.GET','key','$')
+        const event = await Event.findById({ _id: new mongoose.Types.ObjectId(id) })
+            .select("-winnerGroup -timeLimit -creator -__v")
+            .lean();
 
-    const event = await Event.findById({ _id: new mongoose.Types.ObjectId(id) })
-        .select("-winnerGroup -timeLimit -creater -__v")
-        .lean();
+        if (!event) {
+            throw new ApiError(EventError.EVENT_NOT_FOUND);
+        }
 
-    if (!event) {
+        const existGroup = await getGroupDetails(id, req.user._id);
+
+        return res.status(EventSuccess.EVENT_FOUND.statusCode).json(new ApiResponse(EventSuccess.EVENT_FOUND, { event, existGroup }));
+    } catch (err) {
+        console.log(err.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND);
     }
-    return res.status(EventSuccess.EVENT_FOUND.statusCode).json(new ApiResponse(EventSuccess.EVENT_FOUND, event));
 });
 
 async function cacheViewEvent(req, res, next) {
     try {
         const id = req.params.id;
+
         const eventSTR = await RedisClient.call('JSON.GET', `Event:FullData:${id}`, '$');
 
         if (eventSTR) {
             const event = JSON.parse(eventSTR)[0];
-            return res.status(EventSuccess.EVENT_FOUND.statusCode).json(new ApiResponse(EventSuccess.EVENT_FOUND, event));
+            const existGroup = await getGroupDetails(id, req.user._id);
+            return res.status(EventSuccess.EVENT_FOUND.statusCode).json(new ApiResponse(EventSuccess.EVENT_FOUND, { event, existGroup }));
         }
         next();
     } catch (error) {
@@ -445,34 +416,24 @@ async function cacheFindAllEvent(req, res, next) {
         const activeEvent = await getActiveEventsFromCache();
 
         const filteredEvents = activeEvent.filter(event => {
-
             const branchCode = req.user.email.substring(2, 4).toLowerCase();
-
             const timeDifferenceIsMoreThanTwoHours = new Date(event.timeLimit) - moment.tz(Date.now(), "Asia/Kolkata") > 7200000;
             const isAllowedBranch = event.allowBranch.includes('all') || event.allowBranch.includes(branchCode);
             const isFull = event.joinGroup === event.groupLimit;
-
             return timeDifferenceIsMoreThanTwoHours && isAllowedBranch && !isFull;
         });
 
-        const allowedFields = [
-            '_id',
-            'name',
-            'startDate',
-            'endDate',
-            'description',
-            'creater',
-            'location',
-            'category',
-            'avatar'
-        ];
-
         const allowEvent = filteredEvents.map(event => {
-            let finalEvent = {};
-            allowedFields.forEach(field => {
-                finalEvent[field] = event[field];
-            });
-            return finalEvent;
+            return {
+                _id: event._id,
+                name: event.name,
+                startDate: event.startDate,
+                endDate: event.endDate,
+                description: event.description,
+                category: event.category,
+                location: event.location,
+                avatar: event.avatar
+            }
         });
 
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
@@ -483,6 +444,452 @@ async function cacheFindAllEvent(req, res, next) {
         next();
     }
 }
+
+async function generateCSVFilesForBranches(data) {
+    const csvFilePaths = {};
+
+    const csvDir = path.join(__dirname, '../../public/csv/');
+    if (!fs.existsSync(csvDir)) {
+        fs.mkdirSync(csvDir, { recursive: true });
+    }
+
+    for (const branch in data) {
+        if (branch !== 'EventName' && branch !== 'StartDate' && branch !== 'EndDate') {
+            try {
+                if (data[branch].users) {
+                    const csv = json2csv(data[branch].users);
+                    const filePath = path.join(csvDir, `${branch}_event_data.csv`);
+                    fs.writeFileSync(filePath, csv);
+                    csvFilePaths[branch] = filePath;
+                } else {
+                    console.error(`No users found for branch ${branch}`);
+                }
+            } catch (error) {
+                console.error(`Error generating CSV for branch ${branch}:`, error);
+            }
+        }
+    }
+
+    return csvFilePaths;
+}
+
+async function deleteCSVFiles(csvFilePaths) {
+    try {
+        const deletePromises = Object.values(csvFilePaths).map((filePath) => {
+            return fs.promises.unlink(filePath).catch((err) => {
+                    console.error(`Error deleting file ${filePath}:`, err);
+                });
+        });
+
+        await Promise.all(deletePromises);
+        
+        console.log('All files processed for deletion.');
+    } catch (err) {
+        console.error('Error processing file deletions:', err);
+    }
+}
+
+async function sendEmailsToHODs(branchData) {
+    try {
+        const csvFilePaths = await generateCSVFilesForBranches(branchData);
+
+        const emailPromises = Object.keys(branchData).map(async (branch) => {
+            const branchDetails = branchData[branch];
+            const filePath = csvFilePaths[branch];
+
+            if (filePath) {
+                const mailOptions = {
+                    from: 'EventX',
+                    to: branchDetails.HOD,
+                    subject: `Event Report: ${branchData.EventName}`,
+                    text: `Please find attached the report for the event "${branchData.EventName}" held from ${branchData.StartDate} to ${branchData.EndDate}.`,
+                    attachments: [
+                        {
+                            filename: `${branch}_event_data.csv`,
+                            path: filePath
+                        }
+                    ]
+                };
+
+                try {
+                    const info = await transporter.sendMail(mailOptions);
+                    console.log(`Email sent to ${branchDetails.HOD}: ${info.response}`);
+                } catch (error) {
+                    console.error(`Error sending email to ${branchDetails.HOD}:`, error);
+                }
+            } else {
+                console.warn(`No CSV file found for branch ${branch}. Email will not be sent.`);
+            }
+        });
+
+        await Promise.all(emailPromises); // Wait for all emails to be sent
+        console.log('All emails processed.');
+
+        await deleteCSVFiles(csvFilePaths); // Safely delete files after emails are sent
+        console.log('CSV files deleted after emails sent.');
+        
+    } catch (error) {
+        console.error('Error in sending emails:', error);
+    }
+}
+
+const validateAndSendHODEmails = asyncHandler(async (req, res) => {
+    const eventId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+        throw new ApiError(EventError.INVALID_EVENT_ID);
+    }
+
+    const [event] = await cacheData.GetEventDataById('$', eventId); // return array
+
+    const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
+
+    if (event.endDate < currentTime) {
+        throw new ApiError(EventError.EVENT_NOT_END);
+    }
+
+    if (req.user._id !== event.creator) {
+        throw new ApiError(GroupError.CREATOR_NOT_AUTHORIZED);
+    }
+
+    const joinedGroupIds = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
+
+    const joinedGroups = await cacheData.GetGroupDataById('$', ...joinedGroupIds);
+
+    const scannedGroupIds = joinedGroups
+        .filter(group => group.qrCodeScan)
+        .map(group => group._id);
+
+    const scannedUserIds = [];
+
+    for (const groupId of scannedGroupIds) {
+        const userIds = await RedisClient.smembers(`Group:Join:${groupId}`);
+        scannedUserIds.push(...userIds);
+    }
+
+    const users = await cacheData.GetUserDataById('$', ...scannedUserIds);
+
+    const groupedUsersByBranch = users.reduce((result, user) => {
+        const branchId = user.branch;
+        if (!result[branchId]) {
+            // write this later
+            const hodEmail = findHOD(branchId);
+            result[branchId] = {
+                HOD: hodEmail,
+                users: []
+            };
+        }
+        result[branchId].users.push({
+            name: user.name,
+            email: user.email,
+            sem: user.sem
+        });
+
+        return result;
+    }, {});
+
+    groupedUsersByBranch['EventName'] = event.name;
+    groupedUsersByBranch['StartDate'] = event.startDate;
+    groupedUsersByBranch['EndDate'] = event.endDate;
+
+    // Send emails to all HODs
+    sendEmailsToHODs(groupedUsersByBranch);
+
+    return res
+        .status(EventSuccess.SEND_MAIL.status)
+        .json(new ApiResponse(EventSuccess.SEND_MAIL));
+});
+
+const getAllEventCreateByOrg = asyncHandler(async (req, res) => {
+    try {
+        const orgId = req.params.orgId;
+
+        const eventIds = await RedisClient.smembers(`Event:Org:${orgId}`);
+
+        const events = await cacheData.GetEventDataById('$', ...eventIds);
+
+        return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events));
+    } catch (err) {
+        console.log(err.message);
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
+    }
+});
+
+const getGroupInEvent = asyncHandler(async (req, res) => {
+    try {
+        const eventId = req.params.id;
+
+        const groupId = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
+
+        const groups = await cacheData.GetGroupDataById('$', ...groupId);
+
+        return res.status(EventSuccess.EVENT_FOUND.statusCode)
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, groups));
+    } catch (err) {
+        console.log(err.message);
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
+    }
+});
+
+const getUserInEvent = asyncHandler(async (req, res) => {
+    try {
+        const eventId = req.params.eventId;
+
+        const userId = await RedisClient.smembers(`Event:Join:users:${eventId}`);
+
+        const users = await cacheData.GetUserDataById('$', ...userId);
+
+        return res.status(EventSuccess.EVENT_FOUND.statusCode)
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, users));
+
+    } catch (err) {
+        console.log(err.message);
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
+    }
+});
+
+const generateGroupReportCSV = asyncHandler(async (req, res) => {
+    try {
+        const { eventId } = req.body;
+
+        const eventDetails = (await cacheData.GetEventDataById('$', eventId))?.[0];
+        if (!eventDetails) {
+            throw new ApiError(EventError.EVENT_NOT_FOUND);
+        }
+
+        const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
+
+        if (eventDetails.startDate > currentTime) {
+            throw new ApiError(EventError.EVENT_NOT_START);
+        }
+
+        const groupIds = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
+        if (!groupIds.length) {
+            throw new ApiError(EventError.NO_GROUPS_FOUND);
+        }
+
+        const groupData = await cacheData.GetGroupDataById('$', ...groupIds);
+        const csvFields = ['Id', 'Name', 'Score'];
+
+        const csvData = groupData.map(group => ({
+            Id: group._id,
+            Name: group.name,
+            Score: '',
+        }));
+
+        const csv = json2csv(csvData, { fields: csvFields });
+        const fileName = `${Date.now().toString()}.csv`;
+        const filePath = path.join(__dirname, `../../public/csv/${fileName}`);
+
+        // Ensure directory exists
+        const directoryPath = path.dirname(filePath);
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath, { recursive: true });
+        }
+
+        // Write CSV file
+        fs.writeFileSync(filePath, csv);
+
+        // Set response headers for file download
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', 'text/csv');
+
+        // Pipe file content to the response
+        res.status(200).send(csv);
+
+        // Cleanup after sending the file
+        res.on('finish', () => {
+            fs.unlink(filePath, (err) => {
+                if (err) {
+                    console.error(`Error deleting file ${filePath}:`, err);
+                } else {
+                    console.log(`Successfully deleted file ${filePath}`);
+                }
+            });
+        });
+
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        console.error("Error generating CSV report:", error.message);
+        throw new ApiError(EventError.UNABLE_TO_GENERATE_CSV);
+    }
+});
+
+
+const processGroupReportCSV = asyncHandler(async (req, res) => {
+    try {
+        const { eventId } = req.body;
+
+        const event = (await cacheData.GetEventDataById('$', eventId))?.[0];
+
+        if (!event) {
+            throw new ApiError(EventError.EVENT_NOT_FOUND);
+        }
+
+        if (event.creator.toString() !== req.user._id.toString()) {
+            throw new ApiError(EventError.CREATOR_NOT_FOUND);
+        }
+
+        const csvFilePath = req.file.path;
+
+        const csvData = fs.readFileSync(csvFilePath, 'utf8');
+
+        let winnerGroupId = '';
+        let maxScore = 0;
+        
+        const parsedData = csvData.split('\n').slice(1).map(row => {
+            const [Id, Name, Score] = row.split(',');
+
+            const score = parseFloat(Score);
+            if (!isNaN(score) && score >= 0 && score <= 100) {
+                if (score > maxScore) {
+                    maxScore = score;
+                    winnerGroupId = Id;
+                }
+                return { Id, Name, Score: score };
+            }
+        }).filter(item => item);
+
+        const groupUpdates = parsedData.map(async ({ Id, Score }) => {
+            if (mongoose.Types.ObjectId.isValid(Id)) {
+                await Group.updateOne({ _id: Id }, { $set: { score: Score } });
+                await RedisClient.call("JSON.SET", `Group:FullData:${Id}`, '$.score', JSON.stringify(Score));
+            }
+        });
+
+        await Promise.all(groupUpdates);
+
+        await fs.promises.unlink(csvFilePath);
+
+        await Promise.all([
+            Event.updateOne({ _id: new mongoose.Types.ObjectId(eventId) }, { $set: { winnerGroup: winnerGroupId } }),
+            RedisClient.call("JSON.SET", `Event:FullData:${eventId}`, '$.winnerGroup', winnerGroupId)
+        ]);
+
+        return res.status(EventSuccess.CSV_PROCESSED.statusCode)
+            .json(new ApiResponse(EventSuccess.CSV_PROCESSED));
+
+    } catch (error) {
+        console.error('Error processing CSV file:', error.message);
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        throw new ApiError(EventError.UNABLE_TO_PROCESS_CSV, error.message);
+    }
+});
+
+const rankGroupsByEventScore = asyncHandler(async (req, res) => {
+    try {
+        const eventId = req.params.id;
+
+        const eventDetails = (await cacheData.GetEventDataById('$', eventId))?.[0];
+
+        if (!eventDetails) {
+            throw new ApiError(EventError.EVENT_NOT_FOUND);
+        }
+
+        const currentTimestamp = moment.tz(Date.now(), "Asia/Kolkata").toDate();
+
+        if (currentTimestamp <= eventDetails.endDate) {
+            throw new ApiError(EventError.EVENT_NOT_END);
+        }
+
+        if (eventDetails.winnerGroup === null) {
+            throw new ApiError(EventError.RESULT_NOT_DECLARED);
+        }
+
+        const participatingGroupIds = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
+
+        const participatingGroups = await cacheData.GetGroupDataById('$', ...participatingGroupIds);
+
+        participatingGroups.sort((groupA, groupB) => groupB.score - groupA.score);  // Sort in descending order by score
+
+        const rankedGroups = participatingGroups.map(group => ({
+            id: group._id,
+            name: group.name,
+            score: group.score
+        }));
+
+        return res.status(EventSuccess.GROUPS_RANKED.statusCode)
+            .json(new ApiResponse(EventSuccess.GROUPS_RANKED, rankedGroups));
+
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        console.log(error.message);
+        throw new ApiError(EventError.UNABLE_TO_RANK_GROUPS);
+    }
+});
+
+const searchAvailableEvents = asyncHandler(async (req, res) => {
+    const { startDate, endDate, location, creator, name, category } = req.body;
+
+    if (!creator && !name && !category && !location && !startDate && !endDate) {
+        throw new ApiError(EventError.PROVIDE_AT_LEAST_ONE_FIELD);
+    }
+
+    let userBranchCode = 'all';
+
+    if (req?.user?.email) {
+        userBranchCode = req.user.email.substring(2, 4).toLowerCase();
+    }
+
+    const activeEvents = await getActiveEventsFromCache();
+
+    const filteredEvents = activeEvents.filter(event => {
+        userBranchCode = req.user.email.substring(2, 4).toLowerCase();
+        const hasValidTimeLimit =
+            new Date(event.timeLimit) - moment.tz(Date.now(), "Asia/Kolkata") > 7200000;
+        const isAllowedBranch =
+            userBranchCode === 'all' || event.allowBranch.includes('all') || event.allowBranch.includes(userBranchCode);
+        const isNotFull = event.joinGroup < event.groupLimit;
+
+        return hasValidTimeLimit && isAllowedBranch && isNotFull;
+    });
+
+    const searchCriteria = {};
+
+    if (startDate) {
+        searchCriteria.startDate = { $gte: moment.tz(startDate, "Asia/Kolkata").toDate() };
+    }
+    if (endDate) {
+        searchCriteria.endDate = { $lte: moment.tz(endDate, "Asia/Kolkata").toDate() };
+    }
+    if (location) {
+        searchCriteria.location = location;
+    }
+    if (creator) {
+        searchCriteria.creator = creator;
+    }
+    if (name) {
+        searchCriteria.name = { $regex: name, $options: 'i' };
+    }
+    if (category) {
+        searchCriteria.category = category;
+    }
+
+    const matchingEvents = filteredEvents.filter(event => {
+        return Object.entries(searchCriteria).every(([key, condition]) => {
+            if (key === 'startDate' || key === 'endDate') {
+                return event[key] && 
+                    ((!condition.$gte || event[key] >= condition.$gte) && 
+                     (!condition.$lte || event[key] <= condition.$lte));
+            }
+            if (key === 'name') {
+                return event[key] && event[key].match(condition);
+            }
+            return event[key] === condition;
+        });
+    });
+
+    return res.status(EventSuccess.EVENT_FOUND.statusCode)
+        .json(new ApiResponse(EventSuccess.EVENT_FOUND, matchingEvents));
+});
+
 
 module.exports = {
     // function
@@ -496,5 +903,18 @@ module.exports = {
 
     viewEvent,
     cacheViewEvent,
-    SameNameInCache
+    SameNameInCache,
+    searchAvailableEvents,
+
+    getGroupInEvent,
+    getUserInEvent,
+    getAllEventCreateByOrg,
+
+    generateGroupReportCSV,
+    // redire to rank page
+    processGroupReportCSV,
+    rankGroupsByEventScore,
+
+    // write findHOD
+    validateAndSendHODEmails
 };
