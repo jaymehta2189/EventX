@@ -4,6 +4,7 @@ const { createHmac, randomBytes } = require("crypto");
 const ApiError = require("../utils/ApiError.js");
 const { type } = require("os");
 const {UserError} = require("../utils/Constants/User.js");
+const { access } = require("fs");
 /**
  * User Schema:
  * - name: The name of the user.
@@ -12,12 +13,73 @@ const {UserError} = require("../utils/Constants/User.js");
  * - password: The password for the user account (must be at least 8 characters).
  */
 
+// const user = new Schema({
+//     name: {
+//         type: String,
+//         required: true,
+//         lowercase: true,
+//         trim: true
+//     },
+//     email: {
+//         type: String,
+//         required: true,
+//         lowercase: true,
+//         trim: true,
+//         index: true,
+//         unique: true
+//     },
+//     avatar: {
+//         type: String,
+//         required: false,
+//         default:"https://res.cloudinary.com/dlswoqzhe/image/upload/v1736455184/profile_lz6y2x.png"
+//     },
+//     salt:{
+//         type:String
+//     },
+//     branch:{
+//         type:String,
+//         required:false,
+//         trim:true,
+//         lowercase:true,
+//         index:true
+//     },
+//     gender:{
+//         type:String,
+//         enum:['male','female']
+//     },
+//     role:{
+//         type:String,
+//         required:true,
+//         default:"user",
+//         index:true,
+//         enum: ["user","org"]
+//     },
+//     password: {
+//         type: String,
+//         required: true,
+//         minlength: 8 
+//     },
+//     sem:{
+//         type:Number,
+//         required:false,
+//     },
+//     rollno:{
+//         type:String,
+//         required:false,
+//         trim:true,
+//     },
+//     contactdetails:{
+//         type:Number,
+//         required:false,
+//     }
+    
+// });
 const user = new Schema({
     name: {
         type: String,
         required: true,
         lowercase: true,
-        trim: true
+        trim: true,
     },
     email: {
         type: String,
@@ -25,68 +87,85 @@ const user = new Schema({
         lowercase: true,
         trim: true,
         index: true,
-        unique: true
+        unique: true,
     },
     avatar: {
         type: String,
+        default: "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736455184/profile_lz6y2x.png",
+    },
+    salt: {
+        type: String,
         required: false,
-        default:"../../public/images/profile.png"
     },
-    salt:{
-        type:String
+    branch: {
+        type: String,
+        required: false,
+        trim: true,
+        lowercase: true,
+        index: true,
     },
-    branch:{
-        type:String,
-        required:false,
-        trim:true,
-        lowercase:true,
-        index:true
+    gender: {
+        type: String,
+        enum: ['male', 'female'],
     },
-    gender:{
-        type:String,
-        enum:['male','female']
-    },
-    role:{
-        type:String,
-        required:true,
-        default:"user",
-        index:true,
-        enum: ["user","org"]
+    role: {
+        type: String,
+        required: true,
+        default: "user",
+        index: true,
+        enum: ["user", "org"],
     },
     password: {
         type: String,
-        required: true,
-        minlength: 8 
+        required: function () {
+            return !this.isGoogleUser;
+        },
+        minlength: 8,
     },
-    sem:{
-        type:Number,
-        required:false,
+    sem: {
+        type: Number,
+        required: false,
     },
-    rollno:{
-        type:String,
-        required:false,
-        trim:true,
+    rollno: {
+        type: String,
+        required: false,
+        trim: true,
     },
-    contactdetails:{
-        type:Number,
-        required:false,
+    contactdetails: {
+        type: Number,
+        required: false,
+    },
+    googleId: {
+        type: String,
+        required: false,
+        unique: true,
+    },
+    isGoogleUser: {
+        type: Boolean,
+        default: false,
+    },
+    accessToken: {
+        type: String,
+        required: false,
     }
-    
 });
 
-user.pre("save",function (next){
-    const user=this;
-    // auto generate branch from email
-    this.branch = user.email.substring(2,4).toLowerCase();
-    if(!user.isModified("password"))return;
-    const salt=randomBytes(16).toString();
-    
-    const hashpassword = createHmac('sha256', salt)
-               .update(user.password)
-               .digest('hex');
-    this.salt=salt;
-    this.password=hashpassword;
-    next();
+
+user.pre("save", function (next) {
+    this.branch = this.email.substring(2, 4);
+    if (this.isGoogleUser) {
+        next();
+    } else {
+        const user = this;
+        if (!user.isModified("password")) return next();
+        const salt = randomBytes(16).toString();
+        const hashpassword = createHmac('sha256', salt)
+            .update(user.password)
+            .digest('hex');
+        this.salt = salt;
+        this.password = hashpassword;
+        next();
+    }
 });
 
 user.static("matchPasswordAndGenerateToken",async function(email,password){

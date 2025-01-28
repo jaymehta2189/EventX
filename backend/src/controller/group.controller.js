@@ -7,8 +7,8 @@ const User = require("../models/user.model");
 const Event = require("../models/event.model");
 const User_Group_Join = require("../models/User_Group_Join.model");
 const { GroupError, GroupSuccess } = require("../utils/Constants/Group");
-
-
+const { google } = require('googleapis');
+// const oauth2Client = require('../utils/google');
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
 
@@ -103,7 +103,7 @@ async function validateMemberRole(eventId, MemeberEmails) {
     const event = data[0].eventDetails;
 
     const validationPromises = [
-        validateCreatorOrgNotJoinEvent(eventId, users, allowedRoles[1]),
+       // validateCreatorOrgNotJoinEvent(eventId, users, allowedRoles[1]),
         validateAllowBranch(users, event.allowBranch),
         validateGirlCount(users, event.girlMinLimit),
         validateUserLimit(users.length, event.userLimit)
@@ -130,9 +130,9 @@ const createGroup = asyncHandler(async (req, res) => {
 
     // event is the event ID
 
-    const { name, groupLeader, event, validMemberEmail, timeLimit } = req.body;
-
-    if (!name || !groupLeader || !event || !validMemberEmail || !timeLimit || !Array.isArray(validMemberEmail) || validMemberEmail.length === 0) {
+    const { name, groupLeader, event, validMemberEmail } = req.body;
+    const timeLimit = new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000);
+    if (!name || !groupLeader || !event || !validMemberEmail  || !Array.isArray(validMemberEmail) || validMemberEmail.length === 0) {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
 
@@ -147,7 +147,7 @@ const createGroup = asyncHandler(async (req, res) => {
     const session = await mongoose.startSession();
 
     session.startTransaction();
-
+  
     try {
 
         const group = await Group.create({
@@ -156,7 +156,7 @@ const createGroup = asyncHandler(async (req, res) => {
             event,
             timeLimit
         });
-
+       
         const userGroupJoinOperations = validMemberId.map(member => ({
             insertOne: {
                 document: {
@@ -175,6 +175,37 @@ const createGroup = asyncHandler(async (req, res) => {
             { $inc: { joinGroup: 1 } },
             { session }
         );
+        console.log("asasa")
+        //calender
+        try {
+            const eventdetail = await Event.findOne({ _id: new mongoose.Types.ObjectId(event) }).select("startDate endDate name description").lean();
+           console.log(req.user);
+            const  accessToken  = req.user.accessToken;
+            console.log(accessToken);
+            const oauth2Client = new google.auth.OAuth2();
+            oauth2Client.setCredentials({ access_token: accessToken });
+            const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+            const eventcreation = {
+                summary: eventdetail.name,
+                description: eventdetail.description,
+                start: { dateTime: eventdetail.startDate, timeZone: 'UTC' },
+                end: { dateTime: eventdetail.endDate, timeZone: 'UTC' },
+            };
+
+            const response = await calendar.events.insert({
+                calendarId: 'primary',
+                resource: eventcreation,
+            });
+
+            console.log("Google Calendar Event Created:", response.data);
+        } catch (error) {
+            console.error("Error creating event in Google Calendar:", error);
+            res.status(500).json({ message: 'Error creating event', error: error.message });
+        }
+       // calender
+
+
 
         await session.commitTransaction();
 

@@ -28,6 +28,7 @@ exports.UserError = Object.freeze({
 });
 
 exports.UserSuccess = Object.freeze({
+    USER_FOUND: { customCode: 2000, message: "User found.", statusCode: 200 },
     USER_CREATED: { customCode: 2001, message: "User created successfully.", statusCode: 201 },
     USER_UPDATED: { customCode: 2002, message: "User updated successfully.", statusCode: 200 },
     ADMIN_UNHOD_VIEW: { customCode: 2003, message: "admin view unsafe hod.", statusCode: 200 },

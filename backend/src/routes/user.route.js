@@ -9,6 +9,7 @@ router.post("/signup",userController.signupPost);
 router.post("/signin",userController.signinPost);
 router.post("/logout",checkForAuth,userController.logout);
 router.post("/sendOTP",userController.sendOTP);
-router.post("/updateProfile",checkForAuth,userController.updateProfile);
+router.post("/updateProfile/:id",userController.updateProfile);
+router.get("/:id",userController.getUser);
 
 module.exports=router;

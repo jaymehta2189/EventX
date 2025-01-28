@@ -68,12 +68,29 @@ async function validateDate (startDate,endDate){
 };
 
 async function validateBranch(branchs) {
-    const setOfBranch  = [...new Set(branchs)];
-    if(!setOfBranch.every( branch => [...User.Branches,'all'].includes(branch))){
-        throw new ApiError(EventError.INVALID_BRANCH);
-    };
+    // Ensure `branchs` is an array of strings
+    if (typeof branchs === 'string') {
+      try {
+        branchs = JSON.parse(branchs); // Parse stringified array if needed
+      } catch (error) {
+        throw new ApiError(EventError.INVALID_BRANCH); // Handle invalid input
+      }
+    }
+  
+    // Remove duplicates
+    const setOfBranch = [...new Set(branchs)];
+    console.log("Input branches:", branchs);
+    console.log("Unique branches:", setOfBranch);
+    console.log("User branches:", User.Branches);
+  
+    // Check if all branches are valid
+    if (!setOfBranch.every(branch => User.Branches.includes(branch) || branch === 'all')) {
+      throw new ApiError(EventError.INVALID_BRANCH);
+    }
+  
     return setOfBranch;
-}
+  }
+  
 
 async function validateLimit(userLimit, girlCount) {
     if(!Number.isInteger(userLimit) || !Number.isInteger(girlCount)){
@@ -89,9 +106,10 @@ async function validateLimit(userLimit, girlCount) {
 const FreeLocationFromTime = asyncHandler(async (req, res) => {
     const { startDate, endDate } = req.body;
     const allowLocation = Event.allowLocation;
-
+    console.log( startDate);
     const istStartDate = moment.tz(startDate, "Asia/Kolkata").toDate();
     const istEndDate = moment.tz(endDate, "Asia/Kolkata").toDate();
+    console.log( istStartDate,  istEndDate);
 
     const FreeLocationPipeline = [
         {
@@ -130,7 +148,7 @@ const FreeLocationFromTime = asyncHandler(async (req, res) => {
         result.length > 0 && result[0]?.freeLocations
             ? result[0].freeLocations
             : allowLocation;
-
+    console.log("inside freelocation",FreeLocation);
     if (FreeLocation.length === 0) {
         throw new ApiError(EventError.LOCATION_ALREADY_BOOKED);
     }
@@ -143,6 +161,8 @@ const FreeLocationFromTime = asyncHandler(async (req, res) => {
 
 // input category should be trim or lowercase
 async function validateCategory (category){
+    console.log(category);
+    console.log(Event.allowCategory);
     if(!Event.allowCategory.includes(category)){
         throw new ApiError(EventError.INVALID_CATEGORY);
     }
@@ -160,15 +180,18 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
 
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit ,branchs , girlMinLimit , avatar} = req.body;
-    console.log("ndfkjngf,")
+    let { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit ,branchs , girlMinLimit , avatar} = req.body;
+    console.log(  typeof girlMinLimit);
+    girlMinLimit = parseInt(girlMinLimit);
+    groupLimit = parseInt(groupLimit);
+    userLimit = parseInt(userLimit);
     console.log(name , startDate , endDate , location , category ,pricePool ,description ,girlMinLimit ,groupLimit , userLimit ,branchs)
 
     if ([name,startDate,endDate,location,category,pricePool,description,groupLimit,userLimit,girlMinLimit].some(f => isundefine(f))) {
         throw new ApiError(EventError.PROVIDE_ALL_FIELDS);
     }
 
-    console.log("ngbkjnjf")
+    
 
     const [setOfBranch , _, { istStartDate, istEndDate }] = await Promise.all([
         validateBranch(branchs),
@@ -178,34 +201,35 @@ const createEvent = asyncHandler(async (req, res) => {
         validateLimit(userLimit,girlMinLimit)
     ]);
 
-    console.log("nkjlgkj");
 
     if (req.files && req.files.avatar) {
         const localFilePath = req.files.avatar.path;
         avatar = await uploadOnCloudinary(localFilePath);
     }
-
-    console.log("1111111111");
+    let avatarUrl;
+    if(avatar=="undefined"||avatar===null){
+    avatarUrl = avatar ? avatar : "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736367840/Collaborative-Coding.-A-developer-team-working-together.-min-896x504_mnw9np.webp";
+    console.log(avatarUrl);
+    }
     console.log(setOfBranch);
     try {
 
-        console.log(req.user._id);
         const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
-        console.log("22222222222")
+        
         const event = await Event.create({
             name,
-            startDate : istStartDate.toDate(),
-            endDate : istEndDate.toDate(),
+            startDate: istStartDate.toDate(),
+            endDate: istEndDate.toDate(),
             location,
             category,
-            avatar,
+            avatar: avatarUrl,
             pricePool,
             groupLimit,
             userLimit,
             description,
             girlMinLimit,
-            allowBranch:setOfBranch,
-            creator:req.user._id,
+            allowBranch: setOfBranch,
+            creator: req.user._id,
             timeLimit
         });
 
