@@ -298,7 +298,7 @@ const updateProfile = asyncHandler(async (req, res) => {
         user.sem = sem;
         user.rollno = rollno;
         user.contactdetails = contactdetails;
-        
+
         await user.save();
 
         await cacheData.cacheUser(user);
@@ -364,7 +364,7 @@ const getEvent = asyncHandler(async (req, res) => {
         const events = await cacheData.GetEventDataById('$', ...eventIds);
         return res
             .status(UserSuccess.JOIN_EVENT.statusCode)
-            .json(new ApiResponse(UserSuccess.JOIN_EVENT, {events}));
+            .json(new ApiResponse(UserSuccess.JOIN_EVENT, events));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(UserError.USER_NOT_FOUND);
@@ -377,7 +377,7 @@ const getGroup = asyncHandler(async (req, res) => {
         const groups = await cacheData.GetGroupDataById('$', ...groupIds);
         return res
             .status(UserSuccess.JOIN_GROUP.statusCode)
-            .json(new ApiResponse(UserSuccess.JOIN_GROUP, {groups}));
+            .json(new ApiResponse(UserSuccess.JOIN_GROUP, groups));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(UserError.USER_NOT_FOUND);

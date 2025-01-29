@@ -204,7 +204,7 @@ const FreeLocationFromTime = asyncHandler(async (req, res) => {
 
     return res
         .status(EventSuccess.FREE_LOCATIONS_FOUND.statusCode)
-        .json(new ApiResponse(EventSuccess.FREE_LOCATIONS_FOUND, { locations: FreeLocation }));
+        .json(new ApiResponse(EventSuccess.FREE_LOCATIONS_FOUND, FreeLocation ));
 });
 
 // input category should be trim or lowercase
@@ -322,7 +322,7 @@ const findAllEvent = asyncHandler(async (req, res) => {
 
         return res
             .status(EventSuccess.EVENT_ALL_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, { events: events }));
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events ));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND, error.message);
@@ -420,9 +420,9 @@ async function cacheFindAllEvent(req, res, next) {
         const activeEvent = await getActiveEventsFromCache();
 
         const filteredEvents = activeEvent.filter(event => {
-            const branchCode = req.user.email.substring(2, 4).toLowerCase();
+            const branchCode = req?.user.email.substring(2, 4).toLowerCase() || 'all' ;
             const timeDifferenceIsMoreThanTwoHours = new Date(event.timeLimit) - moment.tz(Date.now(), "Asia/Kolkata") > 7200000;
-            const isAllowedBranch = event.allowBranch.includes('all') || event.allowBranch.includes(branchCode);
+            const isAllowedBranch =  branchCode === 'all' || event.allowBranch.includes('all') || event.allowBranch.includes(branchCode);
             const isFull = event.joinGroup === event.groupLimit;
             return timeDifferenceIsMoreThanTwoHours && isAllowedBranch && !isFull;
         });
@@ -441,7 +441,7 @@ async function cacheFindAllEvent(req, res, next) {
         });
 
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, { events: allowEvent }));
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, allowEvent ));
 
     } catch (err) {
         console.log(err.message);
@@ -621,7 +621,7 @@ const getAllEventCreateByOrg = asyncHandler(async (req, res) => {
         const events = await cacheData.GetEventDataById('$', ...eventIds);
 
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, { events: events }));
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events ));
     } catch (err) {
         console.log(err.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND);
@@ -637,7 +637,7 @@ const getGroupInEvent = asyncHandler(async (req, res) => {
         const groups = await cacheData.GetGroupDataById('$', ...groupId);
 
         return res.status(EventSuccess.EVENT_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_FOUND, {groups}));
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, groups));
     } catch (err) {
         console.log(err.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND);
@@ -653,7 +653,7 @@ const getUserInEvent = asyncHandler(async (req, res) => {
         const users = await cacheData.GetUserDataById('$', ...userId);
 
         return res.status(EventSuccess.EVENT_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_FOUND, {users}));
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, users));
 
     } catch (err) {
         console.log(err.message);
@@ -905,7 +905,7 @@ const searchAvailableEvents = asyncHandler(async (req, res) => {
     });
 
     return res.status(EventSuccess.EVENT_FOUND.statusCode)
-        .json(new ApiResponse(EventSuccess.EVENT_FOUND, {events:matchingEvents}));
+        .json(new ApiResponse(EventSuccess.EVENT_FOUND, matchingEvents));
 });
 
 

@@ -356,7 +356,7 @@ const getUserInGroup = asyncHandler(async (req, res) => {
         const users = await cacheData.GetUserDataById('$', ...userIds);
 
         return res.status(GroupSuccess.GROUP_FOUND.statusCode)
-            .json(new ApiResponse(GroupSuccess.GROUP_FOUND, {users} ));
+            .json(new ApiResponse(GroupSuccess.GROUP_FOUND, users ));
 
     } catch (error) {
         console.log(error.message);

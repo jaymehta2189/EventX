@@ -8,7 +8,8 @@ exports.createTokenForUser= (user)=>{
         _id:user._id,
         email:user.email,
         role:user.role,
-        accessT
+        avatar:user.avatar,
+        accessToken:user.accessToken
     }
     ,secretKey);
 }
