@@ -27,6 +27,7 @@ exports.EventError = Object.freeze({
 
     MISSING_NAME: { customCode: 1150, message: "Event name is missing.", statusCode: 400 },
     SAME_NAME:{customCode:1151,message:"Event with this name already exists.",statusCode:400},
+    PROVIDE_AT_LEAST_ONE_FIELD: { customCode: 1152, message: "Please provide at least one field to update.", statusCode: 400 },
 
     LOCATION_NOT_FOUND: { customCode: 1160, message: "Location is not found.", statusCode: 400 },
     LOCATION_ALREADY_BOOKED: { customCode: 1161, message: "Location is already booked for the given time.", statusCode: 401 },

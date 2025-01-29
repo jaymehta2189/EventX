@@ -50,11 +50,10 @@ async function cacheEvent(...eventes) {
         }
 
         // Always set the full event data in JSON format
-        const endDate = new Date(element.endDate).getTime() + 172800000;
+        const endDate = new Date(element.timeLimit).getTime();
         const ttlInSecondsFullData = Math.floor(Math.max((endDate - Date.now()) / 1000, 0));
 
         if (moment.tz(Date.now(), "Asia/Kolkata").isBefore(moment(endDate))) {
-
             pipeline.call('JSON.SET', `Event:FullData:${element._id}`, '$', JSON.stringify(element))
                 .expire(`Event:FullData:${element._id}`, ttlInSecondsFullData)
                 .sadd(`Event:Org:${element.creator}`, element._id)
@@ -89,7 +88,7 @@ async function preCacheEventJOINGroupAndUser() {
                     $lookup: {
                         from: "user_event_joins", // Name of the User_Event_Join collection
                         localField: "_id", // Field in the Event collection
-                        foreignField: "event", // Field in the User_Event_Join collection
+                        foreignField: "Event", // Field in the User_Event_Join collection
                         as: "userJoins", // Alias for matched data
                     },
                 },
@@ -108,7 +107,7 @@ async function preCacheEventJOINGroupAndUser() {
                             $map: {
                                 input: "$userJoins",
                                 as: "userJoin",
-                                in: "$$userJoin._id", // Extract only User IDs
+                                in: "$$userJoin.Member", // Extract only User IDs
                             },
                         },
                     },
@@ -147,7 +146,6 @@ async function preCacheEventJOINGroupAndUser() {
             page++;
         } while (eventsWithDetails.length === limit); // Continue until all events are processed
 
-        console.log('Event details caching completed successfully');
     } catch (error) {
         console.error('Error caching event details:', error.message);
     }
@@ -186,7 +184,7 @@ async function GetEventIdsByUserId(userId) {
 
                 results.forEach(([error, isMember], index) => {
                     if (!error && isMember === 1) {
-                        eventId.push(keys[index].split(':')[2]);
+                        eventId.push(keys[index].split(':')[3]);
                     }
                 });
 
@@ -211,7 +209,6 @@ async function preCacheGroup() {
     try {
         while (true) {
             groups = await Group.find().skip(page * limit).limit(limit);
-
             if (groups.length > 0) {
                 await cacheGroup(...groups);
             } else {
@@ -220,7 +217,6 @@ async function preCacheGroup() {
 
             page++;
         }
-
         return 1;
     } catch (error) {
         console.log(error.message);
@@ -231,10 +227,10 @@ async function preCacheGroup() {
 async function cacheGroup(...groups) {
     const pipeline = RedisClient.pipeline();
 
-    groups.forEach(async group => {
-        const endDateJSON = await RedisClient.call("JSON.GET", `Event:FullData:${group.event}`, '$.endDate');
+    for (const group of groups) {
+        const endDateJSON = await RedisClient.call("JSON.GET", `Event:FullData:${group.event}`, '$.timeLimit');
 
-        const endDate = new Date(JSON.parse(endDateJSON)).getTime() + 172800000;
+        const endDate = new Date(JSON.parse(endDateJSON)).getTime();
         const ttlInSeconds = Math.floor((endDate - Date.now()) / 1000);
 
         if (ttlInSeconds > 0) {
@@ -243,7 +239,7 @@ async function cacheGroup(...groups) {
             pipeline.sadd('Group:Code', group.code);
             pipeline.expire(key, ttlInSeconds);
         }
-    });
+    }
 
     await pipeline.exec();
 }
@@ -290,7 +286,6 @@ async function preCacheGroupJoinUser() {
             page++;
         } while (groupDetails.length === limit);
 
-        console.log('Group Join User caching completed successfully');
     } catch (error) {
         console.error('Error caching group join users:', error.message);
     }
@@ -362,7 +357,6 @@ async function GetGroupIdsByUserId(userId) {
                 pipeline.reset();
             }
         } while (cursor !== '0');
-
         return groupId;
     } catch (error) {
         console.error('Error fetching active groups:', error);
@@ -423,7 +417,9 @@ async function GetUserDataFromEmail(field, ...Emails) {
 
     const userIds = await pipeline.exec();
 
-    const valiedUserId = userIds.filter(([_, userId]) => Boolean(userId));
+    const valiedUserId = userIds
+        .filter(([_, userId]) => Boolean(userId))
+        .map(([_, userId]) => userId);
 
     const users = await GetUserDataById(field, ...valiedUserId);
 

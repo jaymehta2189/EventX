@@ -267,13 +267,15 @@ const viewUserProfile = asyncHandler(async (req, res) => {
 
     const userId = req.params.id;
 
-    const user = (await cacheData.GetUserDataById('$', userId))?.[0];
+    const users = await cacheData.GetUserDataById('$', userId);
 
-    if (!user) {
+    if (users.length === 0) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
 
-    return res.status(UserSuccess.USER_FOUND.status)
+    const user = users[0];
+
+    return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, user));
 
 });
@@ -284,7 +286,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
         console.log("req.user:", req.user);
 
-        const userObject = (await cacheData.GetUserDataById("$",req.user._id))[0];
+        const [userObject] = await cacheData.GetUserDataById("$",req.user._id);
 
         const semValue = parseInt(sem);
         if (isNaN(semValue) && parseInt(userObject.sem) > semValue) {
@@ -355,7 +357,7 @@ const getEvent = asyncHandler(async (req, res) => {
         const events = await cacheData.GetEventDataById('$', ...eventIds);
         return res
             .status(UserSuccess.JOIN_EVENT.statusCode)
-            .json(new ApiResponse(UserSuccess.JOIN_EVENT, events));
+            .json(new ApiResponse(UserSuccess.JOIN_EVENT, {events}));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(UserError.USER_NOT_FOUND);
@@ -368,7 +370,7 @@ const getGroup = asyncHandler(async (req, res) => {
         const groups = await cacheData.GetGroupDataById('$', ...groupIds);
         return res
             .status(UserSuccess.JOIN_GROUP.statusCode)
-            .json(new ApiResponse(UserSuccess.JOIN_GROUP, groups));
+            .json(new ApiResponse(UserSuccess.JOIN_GROUP, {groups}));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(UserError.USER_NOT_FOUND);
@@ -383,11 +385,13 @@ const approveOrganizationSignup = asyncHandler(async (req, res) => {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
 
-    const unsafeUser = (await cacheData.GetUnsafeUserDataById('$', Id))?.[0];
+    const unsafeUsers = await cacheData.GetUnsafeUserDataById('$', Id);
 
-    if (!unsafeUser) {
+    if (unsafeUsers.length === 0) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
+
+    const unsafeUser = unsafeUsers[0];
 
     const user = new User({
         name: unsafeUser.name,
@@ -413,9 +417,9 @@ const getEventCreators = asyncHandler(async (req, res) => {
 
     const creatorNameList = await cacheData.GetUserDataById('$.name', ...creatorIds);
 
-    if (creatorNameList.length === 0) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+    // if (creatorNameList.length === 0) {
+    //     throw new ApiError(UserError.USER_NOT_FOUND);
+    // }
 
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, creatorNameList));
@@ -432,9 +436,9 @@ const getOrganizationsByBranch = asyncHandler(async (req, res) => {
 
     const creatorList = await cacheData.GetUserDataById('$', ...creatorIds);
 
-    if (creatorList.length === 0) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+    // if (creatorList.length === 0) {
+    //     throw new ApiError(UserError.USER_NOT_FOUND);
+    // }
 
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, creatorList));
@@ -445,9 +449,9 @@ const getAllOrganizations = asyncHandler(async (req, res) => {
 
     const creatorList = await cacheData.GetUserDataById('$', ...creatorIds);
 
-    if (creatorList.length === 0) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+    // if (creatorList.length === 0) {
+    //     throw new ApiError(UserError.USER_NOT_FOUND);
+    // }
 
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, creatorList));
@@ -497,9 +501,9 @@ const getUnverifiedOrgs = asyncHandler(async (req, res) => {
     const unverifiedOrgIds = await getUnVerifyOrgIdByBranch('all');
     const unverifiedOrgs = await cacheData.GetUnsafeUserDataById('$', ...unverifiedOrgIds);
 
-    if (unverifiedOrgs.length === 0) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+    // if (unverifiedOrgs.length === 0) {
+    //     throw new ApiError(UserError.USER_NOT_FOUND);
+    // }
 
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, unverifiedOrgs));
@@ -515,9 +519,9 @@ const getUnverifiedOrgsByBranch = asyncHandler(async (req, res) => {
     const unverifiedOrgIds = await getUnVerifyOrgIdByBranch(branch);
     const unverifiedOrgs = await cacheData.GetUnsafeUserDataById('$', ...unverifiedOrgIds);
 
-    if (unverifiedOrgs.length === 0) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+    // if (unverifiedOrgs.length === 0) {
+    //     throw new ApiError(UserError.USER_NOT_FOUND);
+    // }
 
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, unverifiedOrgs));

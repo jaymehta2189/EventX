@@ -98,8 +98,8 @@ user.pre("save", function (next) {
 user.static("matchPasswordAndGenerateToken", async function (email, password) {
     // const user=await this.findOne({email});
     const { GetUserDataFromEmail } = require("../service/cacheData.js");
-
-    const user = (await GetUserDataFromEmail(email))[0];
+    
+    const user = (await GetUserDataFromEmail('$',email))[0];
 
     if (!user) {
         throw new ApiError(UserError.USER_NOT_FOUND);

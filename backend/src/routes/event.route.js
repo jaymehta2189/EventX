@@ -7,12 +7,12 @@ const {checkForOrg} = require("../middleware/check.js");
 const {upload,checkCSVFile} = require('../middleware/multer.js');
 
 router.get("/event/location",checkForAuth,checkForOrg,eventController.FreeLocationFromTime);
-router.post("/event/",checkForAuth,checkForOrg,eventController.createEvent);
+router.post("/event",checkForAuth,checkForOrg,eventController.createEvent);
 router.get("/",checkForAuth,eventController.cacheFindAllEvent,eventController.findAllEvent);
-router.get("/event/:id",eventController.cacheViewEvent,eventController.viewEvent);
-router.get("/event/:id/groups",checkForAuth,checkForOrg,eventController.getGroupInEvent);
-router.get("/event/:id/users",checkForAuth,checkForOrg,eventController.getUserInEvent);
-router.get("/:orgId",checkForAuth,checkForOrg,eventController.getAllEventCreateByOrg);
+router.get("/event/:id",checkForAuth,eventController.cacheViewEvent,eventController.viewEvent);
+router.get("/event/:id/groups",checkForAuth,eventController.getGroupInEvent);
+router.get("/event/:id/users",checkForAuth,eventController.getUserInEvent);
+router.get("/org/:orgId",checkForAuth,checkForOrg,eventController.getAllEventCreateByOrg);
 router.post("/event/:id/check",checkForAuth,checkForOrg,eventController.validateAndSendHODEmails);
 router.get("/search",checkForAuth,eventController.searchAvailableEvents);
 

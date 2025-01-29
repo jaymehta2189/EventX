@@ -21,19 +21,18 @@ async function validateGroupNameInEvent(eventId, groupName) {
         await Group.findOne({ event: new mongoose.Types.ObjectId(eventId), name: groupName }).select("_id").lean();
 
     if (existSameNameGroupInEvent) {
-        throw new ApiError(GroupError.SAME_GROUP_EXISTS );
+        throw new ApiError(GroupError.SAME_GROUP_EXISTS);
     }
 };
 
 const validateCreatorOfEventNotJoinEvent = async (EventCreator, user) => {
     if (user._id.toString() === EventCreator.toString()) {
-        throw new ApiError(GroupError.INVALID_GROUP);
+        throw new ApiError(GroupError.CREATOR_NOT_JOIN);
     }
 };
 
-async function validateUserJoinSameEventBefore(user, eventId) {
+async function validateUserJoinSameEventBefore(eventId, user) {
     const Key = `Event:Join:users:${eventId}`;
-
     if (await RedisClient.sismember(Key, user._id)) {
         throw new ApiError(GroupError.USER_ALREADY_JOIN);
     }
@@ -63,17 +62,21 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
             throw new ApiError(GroupError.INVALID_GROUP);
         }
 
-        const groupData = (await cacheData.GetGroupDataById('$', groupId))?.[0];
-        if (!groupData) {
+        const groupDatas = await cacheData.GetGroupDataById('$', groupId);
+        if (groupDatas.length === 0) {
             responseCode = 403;
             throw new ApiError(GroupError.INVALID_GROUP);
         }
 
-        const eventData = (await cacheData.GetEventDataById('$', groupData.event))?.[0];
-        if (!eventData) {
+        const groupData = groupDatas[0];
+
+        const eventDatas = await cacheData.GetEventDataById('$', groupData.event);
+        if (eventData.length === 0) {
             responseCode = 404;
             throw new ApiError(GroupError.INVALID_EVENT);
         }
+
+        const eventData = eventDatas[0];
 
         const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
         if (eventData.startDate > currentTime || eventData.endDate < currentTime) {
@@ -109,18 +112,20 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
 
 const validateUser = async (eventId, userId) => {
     try {
+        const events = await cacheData.GetEventDataById('$', eventId);
 
-        const event = await cacheData.GetEventDataById('$',eventId)?.[0]; 
-
-        if (!event) {
+        if (events.length === 0) {
             throw new ApiError(GroupError.INVALID_EVENT);
         }
 
-        const user = await cacheData.GetUserDataById('$',userId)?.[0];
+        const event = events[0];
 
-        if(!user){
+        const users = await cacheData.GetUserDataById('$', userId);
+
+        if (users.length === 0) {
             throw new ApiError(GroupError.INVALID_USER);
         }
+        const user = users[0];
 
         if (event.girlMinLimit > 0 && event.userLimit === 1 && user.gender === 'male') {
             throw new ApiError(GroupError.ONLY_GIRL_JOIN);
@@ -133,7 +138,6 @@ const validateUser = async (eventId, userId) => {
         ]);
 
         return user;
-
     } catch (error) {
         throw error;
     }
@@ -161,6 +165,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
 
+
     const AllValidatePromise = [
         validateGroupNameInEvent(event, name),
         validateUser(event, req.user._id),
@@ -168,12 +173,10 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
     ];
 
     const [_, user, code] = await Promise.all(AllValidatePromise);
-
-    const session = await mongoose.startSession();
-
-    session.startTransaction();
-
     try {
+        const session = await mongoose.startSession();
+
+        session.startTransaction();
 
         const [group] = await Group.create([
             {
@@ -250,14 +253,18 @@ const validateAvailableSpot = async (event, userId, code) => {
 
     const group = await Group.findOne({ code }).select("_id").lean();
 
-    if(!group){
+    if (!group) {
         throw new ApiError(GroupError.INVALID_CODE);
     }
 
-    const [userGender] = await cacheData.GetUserDataById('$.gender', userId);
+    const userGenderss = await cacheData.GetUserDataById('$.gender', userId);
+    const userGender = userGenderss[0];
+
     const usersId = await RedisClient.smembers(`Group:Join:users:${group._id}`);
     const userGenders = await cacheData.GetUserDataById('$.gender', ...usersId);
-    const [eventData] = await cacheData.GetEventDataById('$', event);
+
+    const eventDatas = await cacheData.GetEventDataById('$', event);
+    const eventData = eventDatas[0];
 
     if (userGenders.length + 1 > eventData.userLimit) {
         throw new ApiError(GroupError.GROUP_LIMIT_EXCEEDED);
@@ -282,16 +289,18 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
 
-    const AllValidatePromise = [
+
+    await Promise.all([
         validateUser(event, req.user._id),
         validateAvailableSpot(event, req.user._id, code)
-    ];
-
-    const session = await mongoose.startSession();
-
-    session.startTransaction();
+    ]);
 
     try {
+
+
+        const session = await mongoose.startSession();
+
+        session.startTransaction();
 
         const group = await Group.findOne({ code }).select("_id").lean();
 
@@ -305,7 +314,7 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
             Member: req.user._id
         });
 
-        await Promise.all([userEventJoinPromise, userGroupJoinPromise, ...AllValidatePromise]);
+        await Promise.all([userEventJoinPromise, userGroupJoinPromise]);
 
         await session.commitTransaction();
 
@@ -346,7 +355,7 @@ const getUserInGroup = asyncHandler(async (req, res) => {
         const users = await cacheData.GetUserDataById('$', ...userIds);
 
         return res.status(GroupSuccess.GROUP_FOUND.statusCode)
-            .json(new ApiResponse(GroupSuccess.GROUP_FOUND, users || []));
+            .json(new ApiResponse(GroupSuccess.GROUP_FOUND, {users} ));
 
     } catch (error) {
         console.log(error.message);
@@ -364,17 +373,20 @@ const getGroupDetails = async (eventId, userId) => {
 
     const groupId = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
 
+    //let groups = null;
     let group = null;
-
     for (const id of groupId) {
         const existUser = await RedisClient.sismember(`Group:Join:${id}`, userId);
         if (existUser) {
-            [group] = await cacheData.GetGroupDataById('$', id);
+            const groups = await cacheData.GetGroupDataById('$', id);
+            group = groups[0];
             break;
         }
     }
 
-    const [leaderName] = await cacheData.GetUserDataById('$.name', group.groupLeader);
+    const leaderNames = await cacheData.GetUserDataById('$.name', group.groupLeader);
+    const leaderName = leaderNames[0];
+
     const usersId = await RedisClient.smembers(`Group:Join:${group._id}`);
     const userName = await cacheData.GetUserDataById('$.name', ...usersId);
 

@@ -19,6 +19,8 @@ const path = require('path');
 const { transporter } = require('nodemailer');
 const { uploadOnCloudinary } = require('../utils/cloudinary');
 const { isNumberObject } = require("util/types");
+const { eventNames } = require("process");
+const { error } = require("console");
 
 function isundefine(variable) {
     return typeof variable === 'undefined';
@@ -202,7 +204,7 @@ const FreeLocationFromTime = asyncHandler(async (req, res) => {
 
     return res
         .status(EventSuccess.FREE_LOCATIONS_FOUND.statusCode)
-        .json(new ApiResponse(EventSuccess.FREE_LOCATIONS_FOUND, FreeLocation));
+        .json(new ApiResponse(EventSuccess.FREE_LOCATIONS_FOUND, { locations: FreeLocation }));
 });
 
 // input category should be trim or lowercase
@@ -273,7 +275,7 @@ const createEvent = asyncHandler(async (req, res) => {
         if (error.name === "ValidationError") {
             throw new ApiError(EventError.VALIDATION_ERROR, error.message);
         }
-        throw new ApiError(EventError.EVENT_CREATION_FAILED, error.message); 
+        throw new ApiError(EventError.EVENT_CREATION_FAILED, error.message);
     }
 });
 
@@ -317,9 +319,10 @@ const findAllEvent = asyncHandler(async (req, res) => {
         //     throw new ApiError(404, "No events found");
         // }
 
+
         return res
             .status(EventSuccess.EVENT_ALL_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events));
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, { events: events }));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND, error.message);
@@ -352,17 +355,18 @@ const viewEvent = asyncHandler(async (req, res) => {
 async function cacheViewEvent(req, res, next) {
     try {
         const id = req.params.id;
-
-        const eventSTR = await RedisClient.call('JSON.GET', `Event:FullData:${id}`, '$');
-
-        if (eventSTR) {
-            const event = JSON.parse(eventSTR)[0];
+        const events = await cacheData.GetEventDataById('$', id);
+        if (events.length !== 0) {
+            const event = events[0];
             const existGroup = await getGroupDetails(id, req.user._id);
             return res.status(EventSuccess.EVENT_FOUND.statusCode).json(new ApiResponse(EventSuccess.EVENT_FOUND, { event, existGroup }));
         }
-        next();
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
     } catch (error) {
-        console.log(error.message);
+        if(error instanceof ApiError){
+            return next(error);
+        }
+        console.log("scn ,msdc",error.message);
         next();
     }
 }
@@ -437,7 +441,7 @@ async function cacheFindAllEvent(req, res, next) {
         });
 
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, allowEvent));
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, { events: allowEvent }));
 
     } catch (err) {
         console.log(err.message);
@@ -477,12 +481,12 @@ async function deleteCSVFiles(csvFilePaths) {
     try {
         const deletePromises = Object.values(csvFilePaths).map((filePath) => {
             return fs.promises.unlink(filePath).catch((err) => {
-                    console.error(`Error deleting file ${filePath}:`, err);
-                });
+                console.error(`Error deleting file ${filePath}:`, err);
+            });
         });
 
         await Promise.all(deletePromises);
-        
+
         console.log('All files processed for deletion.');
     } catch (err) {
         console.error('Error processing file deletions:', err);
@@ -527,7 +531,7 @@ async function sendEmailsToHODs(branchData) {
 
         await deleteCSVFiles(csvFilePaths); // Safely delete files after emails are sent
         console.log('CSV files deleted after emails sent.');
-        
+
     } catch (error) {
         console.error('Error in sending emails:', error);
     }
@@ -540,11 +544,15 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
         throw new ApiError(EventError.INVALID_EVENT_ID);
     }
 
-    const [event] = await cacheData.GetEventDataById('$', eventId); // return array
+    const events = await cacheData.GetEventDataById('$', eventId); // return array
+    if(events.length === 0 ){
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
+    }
 
+    const event = events[0];
     const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
 
-    if (event.endDate < currentTime) {
+    if (new Date(event.endDate) > currentTime) {
         throw new ApiError(EventError.EVENT_NOT_END);
     }
 
@@ -569,6 +577,10 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
 
     const users = await cacheData.GetUserDataById('$', ...scannedUserIds);
 
+    if (users.length === 0) {
+        throw new ApiError(EventError.NO_GROUPS_FOUND);
+    }
+
     const groupedUsersByBranch = users.reduce((result, user) => {
         const branchId = user.branch;
         if (!result[branchId]) {
@@ -588,6 +600,8 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
         return result;
     }, {});
 
+    console.log(groupedUsersByBranch);
+
     groupedUsersByBranch['EventName'] = event.name;
     groupedUsersByBranch['StartDate'] = event.startDate;
     groupedUsersByBranch['EndDate'] = event.endDate;
@@ -596,20 +610,18 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     sendEmailsToHODs(groupedUsersByBranch);
 
     return res
-        .status(EventSuccess.SEND_MAIL.status)
+        .status(EventSuccess.SEND_MAIL.statusCode)
         .json(new ApiResponse(EventSuccess.SEND_MAIL));
 });
 
 const getAllEventCreateByOrg = asyncHandler(async (req, res) => {
     try {
         const orgId = req.params.orgId;
-
         const eventIds = await RedisClient.smembers(`Event:Org:${orgId}`);
-
         const events = await cacheData.GetEventDataById('$', ...eventIds);
 
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events));
+            .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, { events: events }));
     } catch (err) {
         console.log(err.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND);
@@ -625,7 +637,7 @@ const getGroupInEvent = asyncHandler(async (req, res) => {
         const groups = await cacheData.GetGroupDataById('$', ...groupId);
 
         return res.status(EventSuccess.EVENT_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_FOUND, groups));
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, {groups}));
     } catch (err) {
         console.log(err.message);
         throw new ApiError(EventError.EVENT_NOT_FOUND);
@@ -634,14 +646,14 @@ const getGroupInEvent = asyncHandler(async (req, res) => {
 
 const getUserInEvent = asyncHandler(async (req, res) => {
     try {
-        const eventId = req.params.eventId;
+        const eventId = req.params.id;
 
         const userId = await RedisClient.smembers(`Event:Join:users:${eventId}`);
 
         const users = await cacheData.GetUserDataById('$', ...userId);
 
         return res.status(EventSuccess.EVENT_FOUND.statusCode)
-            .json(new ApiResponse(EventSuccess.EVENT_FOUND, users));
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, {users}));
 
     } catch (err) {
         console.log(err.message);
@@ -653,10 +665,12 @@ const generateGroupReportCSV = asyncHandler(async (req, res) => {
     try {
         const { eventId } = req.body;
 
-        const eventDetails = (await cacheData.GetEventDataById('$', eventId))?.[0];
-        if (!eventDetails) {
+        const eventDetailss = await cacheData.GetEventDataById('$', eventId);
+        if (eventDetailss.length === 0) {
             throw new ApiError(EventError.EVENT_NOT_FOUND);
         }
+
+        const eventDetails = eventDetailss[0];
 
         const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
 
@@ -723,11 +737,13 @@ const processGroupReportCSV = asyncHandler(async (req, res) => {
     try {
         const { eventId } = req.body;
 
-        const event = (await cacheData.GetEventDataById('$', eventId))?.[0];
+        const events = await cacheData.GetEventDataById('$', eventId);
 
-        if (!event) {
+        if (events.length === 0) {
             throw new ApiError(EventError.EVENT_NOT_FOUND);
         }
+
+        const event = events[0];
 
         if (event.creator.toString() !== req.user._id.toString()) {
             throw new ApiError(EventError.CREATOR_NOT_FOUND);
@@ -739,7 +755,7 @@ const processGroupReportCSV = asyncHandler(async (req, res) => {
 
         let winnerGroupId = '';
         let maxScore = 0;
-        
+
         const parsedData = csvData.split('\n').slice(1).map(row => {
             const [Id, Name, Score] = row.split(',');
 
@@ -785,11 +801,13 @@ const rankGroupsByEventScore = asyncHandler(async (req, res) => {
     try {
         const eventId = req.params.id;
 
-        const eventDetails = (await cacheData.GetEventDataById('$', eventId))?.[0];
+        const eventDetailss = await cacheData.GetEventDataById('$', eventId);
 
-        if (!eventDetails) {
+        if (eventDetailss.length === 0) {
             throw new ApiError(EventError.EVENT_NOT_FOUND);
         }
+
+        const eventDetails = eventDetailss[0];
 
         const currentTimestamp = moment.tz(Date.now(), "Asia/Kolkata").toDate();
 
@@ -875,9 +893,9 @@ const searchAvailableEvents = asyncHandler(async (req, res) => {
     const matchingEvents = filteredEvents.filter(event => {
         return Object.entries(searchCriteria).every(([key, condition]) => {
             if (key === 'startDate' || key === 'endDate') {
-                return event[key] && 
-                    ((!condition.$gte || event[key] >= condition.$gte) && 
-                     (!condition.$lte || event[key] <= condition.$lte));
+                return event[key] &&
+                    ((!condition.$gte || new Date(event[key]) >= condition.$gte) &&
+                        (!condition.$lte || new Date(event[key]) <= condition.$lte));
             }
             if (key === 'name') {
                 return event[key] && event[key].match(condition);
@@ -887,7 +905,7 @@ const searchAvailableEvents = asyncHandler(async (req, res) => {
     });
 
     return res.status(EventSuccess.EVENT_FOUND.statusCode)
-        .json(new ApiResponse(EventSuccess.EVENT_FOUND, matchingEvents));
+        .json(new ApiResponse(EventSuccess.EVENT_FOUND, {events:matchingEvents}));
 });
 
 

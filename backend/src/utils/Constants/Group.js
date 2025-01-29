@@ -6,6 +6,7 @@ exports.GroupError = Object.freeze({
     INVALID_GROUP: { customCode: 1204, message: "Invalid group id.", statusCode: 400 },
     INVALID_CODE: { customCode: 1205, message: "Invalid code.", statusCode: 400 },
     INVALID_USER: { customCode: 1206, message: "Invalid user.", statusCode: 400 },
+    CREATOR_NOT_JOIN: { customCode: 1207, message: "Creator cannot join the group.", statusCode: 400 },
 
     GROUP_LIMIT_EXCEEDED: { customCode: 1210, message: "Group limit exceeded.", statusCode: 400 },
     MISSING_MEMBER_EMAIL: { customCode: 1211, message: "Member email is missing.", statusCode: 400 },
