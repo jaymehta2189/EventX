@@ -8,6 +8,11 @@ const cookieParser = require("cookie-parser");
 const path = require("path");
 const ApiError = require("./utils/ApiError.js");
 
+// ======================
+const session = require('express-session');
+const passport = require('passport');
+// ======================
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // app.use(express.static(path.resolve("../public")));
@@ -23,10 +28,21 @@ app.use(cors({
 
 app.use(fileUpload());
 
+// =======================
+app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
+// =======================
+
 const UserRouter = require("./routes/user.route.js");
 const EventRouter = require("./routes/event.route.js");
 const GroupRouter = require("./routes/group.route.js");
 const RedisClient = require("./service/configRedis.js");
+
+// ============================
+const AuthRouter = require("./routes/auth.route.js");
+// ============================
+
 const { exit } = require("process");
 
 RedisClient.on('ready', async() => {
@@ -61,6 +77,8 @@ RedisClient.on('error', (error) => {
 app.use("/api/v1/users", UserRouter);
 app.use("/api/v1/events", EventRouter);
 app.use("/api/v1/groups", GroupRouter);
+
+app.use("/api/v1/auth",AuthRouter);
 
 app.use((err, req, res, next) => {
     if (err instanceof ApiError) {

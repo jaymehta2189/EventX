@@ -74,7 +74,12 @@ const user = new Schema({
         type: Number,
         required: false,
     },
-    access_token: {
+    googleId: {
+        type: String,
+        required: false,
+        unique: true,
+    },
+    accessToken: {
         type: String,
         required: false
     }

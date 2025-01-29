@@ -281,30 +281,37 @@ const viewUserProfile = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
-    const { sem, rollno, contactdetails } = req.body;
+    const id = req.params.id;
+    const { role , gender , sem , rollno , contactdetails} = req.body;
     try {
 
-        console.log("req.user:", req.user);
+        const userObject = await cacheData.GetUserDataById("$._id",req.user._id);
 
-        const [userObject] = await cacheData.GetUserDataById("$",req.user._id);
-
-        const semValue = parseInt(sem);
-        if (isNaN(semValue) && parseInt(userObject.sem) > semValue) {
-            throw new ApiError(UserError.INVALID_SEM);
+        if(userObject.length === 0){
+            throw new ApiError(UserError.USER_NOT_FOUND);
         }
 
-        const user = await User.findByIdAndUpdate({ _id: new mongoose.Types.ObjectId(req.user._id) }, { sem:semValue, rollno, contactdetails }).select("_id");
+        const user = await User.findById({_id:new mongoose.Types.ObjectId(id)});
 
+        user.role = role;
+        user.gender=gender;
+        user.sem = sem;
+        user.rollno = rollno;
+        user.contactdetails = contactdetails;
+        
+        await user.save();
 
-        Object.assign(userObject, { sem:semValue, rollno, contactdetails });
+        await cacheData.cacheUser(user);
 
-        await RedisClient.call('JSON.SET', `User:FullData:${user._id}`, '$', JSON.stringify(userObject));
+        console.log("after update profile");
+        console.log(user);
 
-        console.log("Updated user:", userObject);
+        const token= createTokenForUser(user);
 
         return res
-            .status(UserSuccess.PROFILE_UPDATED.statusCode)
-            .json(new ApiResponse(UserSuccess.PROFILE_UPDATED));
+            .status(UserSuccess.LOG_IN.statusCode)
+            .cookie("token", token,{path:"/"})
+            .json(new ApiResponse(UserSuccess.LOG_IN, token));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(UserError.PROFILE_UPDATE_FAILED);

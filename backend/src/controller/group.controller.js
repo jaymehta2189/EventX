@@ -13,6 +13,8 @@ const otpGenerator = require("otp-generator");
 const RedisClient = require("../service/configRedis");
 const cacheData = require("../service/cacheData");
 const moment = require('moment-timezone');
+const { google } = require('googleapis');
+const passport = require("passport");
 
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
@@ -165,7 +167,6 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
 
-
     const AllValidatePromise = [
         validateGroupNameInEvent(event, name),
         validateUser(event, req.user._id),
@@ -211,7 +212,8 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        // also set Calender Api for this group
+        // set calender
+        await SetCalender(event , req.user.accessToken);
 
         const pipeline = RedisClient.pipeline();
 
@@ -297,7 +299,6 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
     try {
 
-
         const session = await mongoose.startSession();
 
         session.startTransaction();
@@ -318,10 +319,10 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
+        await SetCalender(event,req.user.accessToken);
+
         RedisClient.sadd(`Group:Join:users:${group._id}`, req.user._id);
         cacheData.cacheAddUserInGroup(group._id, req.user._id);
-
-        // set calender api for this group
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, { id: group._id }));
@@ -397,6 +398,38 @@ const getGroupDetails = async (eventId, userId) => {
         usersName: userName
     };
 };
+
+async function SetCalender(eventId , accessToken){
+    try {
+        const eventdetails = await cacheData.GetEventDataById("$",eventId);
+        const eventdetail = eventdetails[0];
+        
+        console.log(eventdetail);
+
+        const oauth2Client = new google.auth.OAuth2();
+        
+        console.log(accessToken);
+        oauth2Client.setCredentials({ access_token: accessToken });
+        const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+        const eventcreation = {
+            summary: eventdetail.name,
+            description: eventdetail.description,
+            start: { dateTime: eventdetail.startDate, timeZone: 'UTC' },
+            end: { dateTime: eventdetail.endDate, timeZone: 'UTC' },
+        };
+
+        const response = await calendar.events.insert({
+            calendarId: 'primary',
+            resource: eventcreation,
+        });
+
+        console.log("Google Calendar Event Created:", response.data);
+    } catch (error) {
+        console.error("Error creating event in Google Calendar:", error);
+        res.status(500).json({ message: 'Error creating event', error: error.message });
+    }
+}
 
 module.exports = {
     // createGroup,
