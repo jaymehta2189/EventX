@@ -10,9 +10,9 @@ router.post("/signin",userController.signinPost);
 router.post("/logout",checkForAuth,userController.logout);
 router.post("/sendOTP",userController.sendOTP);
 
-router.get("/user/:id",checkForAuth,userController.viewUserProfile);
+router.get("/user/:id",userController.viewUserProfile);
 router.get("/user/:id/events",checkForAuth,userController.getEvent);
-router.get("/user/:id/groups",checkForAuth,userController.getGroup);
+router.get("/user/groups",checkForAuth,userController.getGroup);
 
 router.get("/creator",checkForAuth,userController.getEventCreators);
 
@@ -21,7 +21,7 @@ router.get("/orgs",checkForAuth,userController.getAllOrganizations);
 router.get("/unorgs",checkForAuth,userController.getUnverifiedOrgs);
 router.get("/unorgs/:branch",checkForAuth,userController.getUnverifiedOrgsByBranch);
 
-router.patch("/profile",checkForAuth,userController.updateProfile);
+router.post("/profile/:id",userController.updateProfile);
 
 // for admin
 router.get('/db/clean',checkForAuth,userController.cleanup);

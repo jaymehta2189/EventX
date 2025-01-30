@@ -6,7 +6,7 @@ const checkForAuth = require("../middleware/authentication.js");
 const {checkForOrg} = require("../middleware/check.js");
 const {upload,checkCSVFile} = require('../middleware/multer.js');
 
-router.get("/event/location",checkForAuth,checkForOrg,eventController.FreeLocationFromTime);
+router.post("/event/location",checkForAuth,checkForOrg,eventController.FreeLocationFromTime);
 router.post("/event",checkForAuth,checkForOrg,eventController.createEvent);
 router.get("/",checkForAuth,eventController.cacheFindAllEvent,eventController.findAllEvent);
 router.get("/event/:id",checkForAuth,eventController.cacheViewEvent,eventController.viewEvent);

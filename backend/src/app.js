@@ -10,7 +10,7 @@ const ApiError = require("./utils/ApiError.js");
 
 // ======================
 const session = require('express-session');
-const passport = require('passport');
+const passport = require("./service/passportConfig.js");
 // ======================
 
 app.use(express.json());

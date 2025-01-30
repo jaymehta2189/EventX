@@ -98,6 +98,8 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+
+        console.log("inside passport");
         const email = profile.emails[0].value.toLowerCase().trim();
 
         // Validate email pattern

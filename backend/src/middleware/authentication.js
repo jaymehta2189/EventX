@@ -1,6 +1,8 @@
 const { verifyToken } = require("../service/token");
 function checkForAuth(req, res, next) {
     const cookieName = "token";
+    console.log(req.cookies["token"]);
+    console.log(req.header("Authorization"));
     const cookietoken = req.cookies[cookieName] || req.header("Authorization")?.replace("Bearer ","");
 
     if (!cookietoken) {

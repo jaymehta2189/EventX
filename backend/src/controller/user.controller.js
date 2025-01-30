@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const OTP = require("../models/otp.model");
 const otpGenerator = require("otp-generator");
 const Group = require("../models/group.model.js");
-
+const {createTokenForUser} = require("../service/token.js");
 const RedisClient = require("../service/configRedis.js")
 const cacheData = require("../service/cacheData.js")
 const { UserError, UserSuccess } = require("../utils/Constants/User.js");
@@ -285,7 +285,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     const { role , gender , sem , rollno , contactdetails} = req.body;
     try {
 
-        const userObject = await cacheData.GetUserDataById("$._id",req.user._id);
+        const userObject = await cacheData.GetUserDataById("$._id",id);
 
         if(userObject.length === 0){
             throw new ApiError(UserError.USER_NOT_FOUND);
@@ -371,17 +371,38 @@ const getEvent = asyncHandler(async (req, res) => {
     }
 });
 
+// const getGroup = asyncHandler(async (req, res) => {
+//     try {
+//         const groupIds = await cacheData.GetGroupIdsByUserId(req.params.id);
+//         const groups = await cacheData.GetGroupDataById('$', ...groupIds);
+//         return res
+//             .status(UserSuccess.JOIN_GROUP.statusCode)
+//             .json(new ApiResponse(UserSuccess.JOIN_GROUP, groups));
+//     } catch (error) {
+//         console.log(error.message);
+//         throw new ApiError(UserError.USER_NOT_FOUND);
+//     }
+// });
+
+
 const getGroup = asyncHandler(async (req, res) => {
-    try {
-        const groupIds = await cacheData.GetGroupIdsByUserId(req.params.id);
-        const groups = await cacheData.GetGroupDataById('$', ...groupIds);
-        return res
-            .status(UserSuccess.JOIN_GROUP.statusCode)
-            .json(new ApiResponse(UserSuccess.JOIN_GROUP, groups));
-    } catch (error) {
-        console.log(error.message);
-        throw new ApiError(UserError.USER_NOT_FOUND);
+    const id = new mongoose.Types.ObjectId(req.user._id);
+    let groups = await User_Group_Join.find({ Member: id }).populate("Group").exec();
+
+    groups = groups.map(element => element.Group);
+
+    for (let element of groups) {
+        if (element.event) {
+            const eventdetials = await Event.findById({_id:new mongoose.Types.ObjectId(element.event)});
+            // element={...element,eventname:eventname.name};
+            element.event=eventdetials;
+        }
     }
+    console.log(groups);
+    if (!groups.length) {
+        throw new ApiError(UserError.GROUP_NOT_FOUND);
+    }
+    res.status(UserSuccess.GROUP_FOUND.statusCode).json(new ApiResponse(UserSuccess.GROUP_FOUND, groups));
 });
 
 // change

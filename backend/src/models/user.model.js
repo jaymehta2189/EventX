@@ -14,13 +14,12 @@ const { max } = require("moment-timezone");
  * - avatar: The image URL representing the user's avatar.   (later Include Default Avatar)
  * - password: The password for the user account (must be at least 8 characters).
  */
-
 const user = new Schema({
     name: {
         type: String,
         required: true,
         lowercase: true,
-        trim: true
+        trim: true,
     },
     email: {
         type: String,
@@ -28,42 +27,44 @@ const user = new Schema({
         lowercase: true,
         trim: true,
         index: true,
-        unique: true
+        unique: true,
     },
     avatar: {
         type: String,
-        required: false,
-        default: "../../public/images/profile.png"
+        default: "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736455184/profile_lz6y2x.png",
     },
     salt: {
-        type: String
+        type: String,
+        required: false,
     },
     branch: {
         type: String,
         required: false,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        index: true,
     },
     gender: {
         type: String,
-        enum: ['male', 'female']
+        enum: ['male', 'female'],
     },
     role: {
         type: String,
         required: true,
         default: "user",
-        enum: ["user", "org"]
+        index: true,
+        enum: ["user", "org"],
     },
     password: {
         type: String,
-        required: true,
-        minlength: 8
+        required: function () {
+            return !this.isGoogleUser;
+        },
+        minlength: 8,
     },
     sem: {
         type: Number,
         required: false,
-        min: 1,
-        max: 8
     },
     rollno: {
         type: String,
@@ -79,46 +80,49 @@ const user = new Schema({
         required: false,
         unique: true,
     },
+    isGoogleUser: {
+        type: Boolean,
+        default: false,
+    },
     accessToken: {
         type: String,
-        required: false
+        required: false,
     }
 });
 
-user.pre("save", function (next) {
-    const user = this;
-    // auto generate branch from email
-    this.branch = user.email.substring(2, 4).toLowerCase();
-    if (!user.isModified("password")) return;
-    const salt = randomBytes(16).toString();
 
-    const hashpassword = createHmac('sha256', salt)
-        .update(user.password)
-        .digest('hex');
-    this.salt = salt;
-    this.password = hashpassword;
-    next();
+user.pre("save", function (next) {
+    this.branch = this.email.substring(2, 4);
+    if (this.isGoogleUser) {
+        next();
+    } else {
+        const user = this;
+        if (!user.isModified("password")) return next();
+        const salt = randomBytes(16).toString();
+        const hashpassword = createHmac('sha256', salt)
+            .update(user.password)
+            .digest('hex');
+        this.salt = salt;
+        this.password = hashpassword;
+        next();
+    }
 });
 
-user.static("matchPasswordAndGenerateToken", async function (email, password) {
-    // const user=await this.findOne({email});
-    const { GetUserDataFromEmail } = require("../service/cacheData.js");
-    
-    const user = (await GetUserDataFromEmail('$',email))[0];
-
-    if (!user) {
+user.static("matchPasswordAndGenerateToken",async function(email,password){
+    const user=await this.findOne({email});
+    if(!user){
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
 
-    const salt = user.salt;
-    const originalpassword = user.password;
-    const userPass = createHmac("sha256", salt).update(password).digest("hex");
+    const salt=user.salt;
+    const originalpassword=user.password;
+    const userPass=createHmac("sha256",salt).update(password).digest("hex");
 
-    if (originalpassword !== userPass) {
+    if(originalpassword!==userPass){
         throw new ApiError(UserError.PASSWORD_MISMATCH);
     }
 
-    const token = tokendetails.createTokenForUser(user);
+    const token=tokendetails.createTokenForUser(user);
     return token;
 });
 
@@ -130,15 +134,15 @@ user.static("matchPasswordAndGenerateToken", async function (email, password) {
 
 user.statics.allowedRoles = user.obj.role.enum;
 user.statics.emailPattern = /^\d{2}(it|ce|ec|ch)(uos|nsa)\d{3}@ddu\.ac\.in$/;
-function getAllBranchFromPattern(emailPattern) {
+function getAllBranchFromPattern(emailPattern){
     const match = emailPattern.toString().match(/\((.*?)\)/);
-    if (match && match[1]) {
-        return match[1].split('|');
-    }
-    return [];
+  if (match && match[1]) {
+    return match[1].split('|');
+  }
+  return [];
 }
 
 user.statics.Branches = getAllBranchFromPattern(user.statics.emailPattern);
 
 const User = mongoose.model("User", user);
-module.exports = User;
+module.exports=User;

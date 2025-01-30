@@ -89,6 +89,14 @@ async function validateDate(startDate, endDate) {
 };
 
 async function validateBranch(branchs) {
+    if (typeof branchs === 'string') {
+        try {
+          branchs = JSON.parse(branchs); // Parse stringified array if needed
+        } catch (error) {
+          throw new ApiError(EventError.INVALID_BRANCH); // Handle invalid input
+        }
+      }
+
     const setOfBranch = [...new Set(branchs)];
     if (!setOfBranch.every(branch => [...User.Branches, 'all'].includes(branch))) {
         throw new ApiError(EventError.INVALID_BRANCH);
@@ -108,10 +116,8 @@ async function validateLimit(userLimit, girlCount) {
 
 async function CacheFreeLocationFromTime(startDate, endDate) {
     const allowLocation = Event.allowLocation;
-
     const istStartDate = moment.tz(startDate, "Asia/Kolkata").toDate().getTime();
     const istEndDate = moment.tz(endDate, "Asia/Kolkata").toDate().getTime();
-
     try {
         let cursor = '0';
         let eventDetails = [];
@@ -130,7 +136,7 @@ async function CacheFreeLocationFromTime(startDate, endDate) {
                 const eventsData = await pipeline.exec();
 
                 eventsData.forEach(event => {
-                    if (!event[0]) {
+                    if (!event[0]&&event[1]) {
                         eventDetails.push(...JSON.parse(event[1]));
                     }
                 });
@@ -209,6 +215,7 @@ const FreeLocationFromTime = asyncHandler(async (req, res) => {
 
 // input category should be trim or lowercase
 async function validateCategory(category) {
+    console.log(Event.allowCategory);
     if (!Event.allowCategory.includes(category)) {
         throw new ApiError(EventError.INVALID_CATEGORY);
     }
@@ -226,8 +233,11 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
 
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
-    const { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, branchs, girlMinLimit, avatar } = req.body;
-
+    let { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, branchs, girlMinLimit, avatar } = req.body;
+    console.log("heeeeeeeeeeeee");  
+    girlMinLimit = parseInt(girlMinLimit);
+    groupLimit = parseInt(groupLimit);
+    userLimit = parseInt(userLimit);
     if ([name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, girlMinLimit].some(f => isundefine(f))) {
         throw new ApiError(EventError.PROVIDE_ALL_FIELDS);
     }
@@ -239,10 +249,16 @@ const createEvent = asyncHandler(async (req, res) => {
         validateCategory(category),
         validateLimit(userLimit, girlMinLimit)
     ]);
-
+    console.log("heeeeeeeeeeeee");
     if (req.files && req.files.avatar) {
         const localFilePath = req.files.avatar.path;
         avatar = await uploadOnCloudinary(localFilePath);
+    }
+    console.log("heeeeeeeeeeeee");
+    let avatarUrl;
+    if(avatar=="undefined"||avatar===null){
+    avatarUrl = avatar ? avatar : "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736367840/Collaborative-Coding.-A-developer-team-working-together.-min-896x504_mnw9np.webp";
+    console.log(avatarUrl);
     }
 
     try {
@@ -254,7 +270,7 @@ const createEvent = asyncHandler(async (req, res) => {
             endDate: istEndDate.toDate(),
             location,
             category,
-            avatar,
+            avatar:avatarUrl,
             pricePool,
             groupLimit,
             userLimit,
@@ -401,8 +417,11 @@ async function getActiveEventsFromCache() {
                 pipeline.reset();
 
                 eventsData.forEach(event => {
-                    if (!event[0]) {
-                        activeEvents.push(...JSON.parse(event[1]));
+                    if (!event[0] && event[1]) {
+                        const parsedEvent = JSON.parse(event[1]);
+                        if (parsedEvent) {
+                            activeEvents.push(...parsedEvent);
+                        }
                     }
                 });
             }
