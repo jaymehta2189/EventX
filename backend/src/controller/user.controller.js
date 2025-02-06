@@ -298,6 +298,7 @@ const updateProfile = asyncHandler(async (req, res) => {
         user.sem = sem;
         user.rollno = rollno;
         user.contactdetails = contactdetails;
+        user.setProfile = true;
 
         await user.save();
 

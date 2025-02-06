@@ -317,19 +317,15 @@ async function cacheGroupJoinUser(...groupDetails) {
 
         if (ttlInSeconds > 0) {
             const Key = `Group:Join:${group._id}`;
-            if (Array.isArray(group.JoinUserId)) {
+            if (Array.isArray(group.JoinUserId) && group.JoinUserId.length > 0) {
                 pipeline.sadd(Key, ...group.JoinUserId);
-            } else {
+            } else if (group.JoinUserId) {
                 pipeline.sadd(Key, group.JoinUserId);
-            }
+            }            
             pipeline.expire(Key, ttlInSeconds);
         }
     }
     await pipeline.exec();
-}
-
-async function cacheAddUserInGroup(groupId, userId) {
-    await RedisClient.sadd(`Group:Join:${groupId}`, userId);
 }
 
 async function GetGroupDataById(field, ...GroupIds) {
@@ -631,7 +627,6 @@ module.exports = {
     cacheGroupJoinUser,
     cacheGroup,
     GetGroupDataById,
-    cacheAddUserInGroup,
     GetGroupIdsByUserId,
     cacheGroupLeaderJoinUser,
 

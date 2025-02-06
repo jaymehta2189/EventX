@@ -167,6 +167,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
     if (!name || !event) {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
+    const session = await mongoose.startSession();
 
     const AllValidatePromise = [
         validateGroupNameInEvent(event, name),
@@ -176,8 +177,6 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
     const [_, user, code] = await Promise.all(AllValidatePromise);
     try {
-        const session = await mongoose.startSession();
-
         session.startTransaction();
 
         const [group] = await Group.create([
@@ -212,15 +211,17 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
         await Promise.all([userEventJoinPromise, userGroupJoinPromise, eventUpdatePromise]);
 
         console.log(req.user.refershToken);
-        // set calender
-        await SetCalender(event, req.user.accessToken);
-        console.log("Calender Set");
+
+        if (user.isGoogleUser) {
+            await SetCalender(event, req.user.accessToken);
+            console.log("Calender Set");
+        }
+
         const pipeline = RedisClient.pipeline();
 
         pipeline.sadd(`Event:Join:groups:${event}`, group._id);
         pipeline.sadd(`Event:Join:users:${event}`, user._id);
         pipeline.call('JSON.NUMINCRBY', `Event:FullData:${event}`, '$.joinGroup', 1);
-        pipeline.sadd('Group:Code', code);
 
         await Promise.all([
             pipeline.exec(),
@@ -238,7 +239,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        console.log("Group Created",existGroup);
+        console.log("Group Created", existGroup);
 
         return res.status(GroupSuccess.GROUP_CREATED.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_CREATED, existGroup));
@@ -268,11 +269,13 @@ const validateAvailableSpot = async (event, userId, code) => {
     const userGenderss = await cacheData.GetUserDataById('$.gender', userId);
     const userGender = userGenderss[0];
 
-    const usersId = await RedisClient.smembers(`Group:Join:users:${group._id}`);
+    const usersId = await RedisClient.smembers(`Group:Join:${group._id}`);
     const userGenders = await cacheData.GetUserDataById('$.gender', ...usersId);
 
     const eventDatas = await cacheData.GetEventDataById('$', event);
     const eventData = eventDatas[0];
+
+    console.log(userGenders.length + 1, eventData.userLimit);
 
     if (userGenders.length + 1 > eventData.userLimit) {
         throw new ApiError(GroupError.GROUP_LIMIT_EXCEEDED);
@@ -297,42 +300,42 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
 
+    const session = await mongoose.startSession();
 
-    await Promise.all([
+    const [user] = await Promise.all([
         validateUser(event, req.user._id),
         validateAvailableSpot(event, req.user._id, code)
     ]);
 
     try {
 
-        const session = await mongoose.startSession();
-
         session.startTransaction();
 
         const group = await Group.findOne({ code }).select("_id").lean();
 
-        const userEventJoinPromise = User_Event_Join.create({
+        const userEventJoinPromise = User_Event_Join.create([{
             Event: event,
-            Member: req.user._id
-        });
+            Member: user._id
+        }], { session });
 
-        const userGroupJoinPromise = User_Group_Join.create({
+        const userGroupJoinPromise = User_Group_Join.create([{
             Group: group._id,
-            Member: req.user._id
-        });
+            Member: user._id
+        }], { session });
 
         await Promise.all([userEventJoinPromise, userGroupJoinPromise]);
 
-
-
-        await SetCalender(event, req.user.accessToken);
+        if (user.isGoogleUser) {
+            await SetCalender(event, user.accessToken);
+            console.log("Calender Set");
+        }
 
         await Promise.all([
-            RedisClient.sadd(`Group:Join:users:${group._id}`, req.user._id),
-            cacheData.cacheAddUserInGroup(group._id, req.user._id)
+            RedisClient.sadd(`Group:Join:${group._id}`, user),
+            RedisClient.sadd(`Event:Join:users:${event}`, user._id)
         ]);
 
-        const existGroup = await getGroupDetails(event, req.user._id);
+        const existGroup = await getGroupDetails(event, user._id);
 
         await session.commitTransaction();
 
@@ -354,8 +357,6 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
     } finally {
         session.endSession();
     }
-
-    // set calender api for this group
 });
 const getUserInGroup = asyncHandler(async (req, res) => {
 
@@ -428,8 +429,8 @@ async function SetCalender(eventId, refershToken) {
         };
 
         const response = await calendar.events.insert({
-           auth: oauth2Client,
-           calendarId:"primary",
+            auth: oauth2Client,
+            calendarId: "primary",
             resource: eventcreation,
         });
         // console.log("Google Calendar Event Created:", response.data);

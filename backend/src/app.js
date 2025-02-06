@@ -10,7 +10,6 @@ const ApiError = require("./utils/ApiError.js");
 
 // ======================
 const session = require('express-session');
-const passport = require("./service/passportConfig.js");
 // ======================
 
 app.use(express.json());
@@ -30,8 +29,8 @@ app.use(fileUpload());
 
 // =======================
 app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: true }));
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 // =======================
 
 const UserRouter = require("./routes/user.route.js");

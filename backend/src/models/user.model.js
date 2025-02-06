@@ -77,8 +77,7 @@ const user = new Schema({
     },
     googleId: {
         type: String,
-        required: false,
-        unique: true,
+        required: false
     },
     isGoogleUser: {
         type: Boolean,
@@ -88,9 +87,17 @@ const user = new Schema({
         type: String,
         required: false,
     },
-    refeshToken: {
+    refreshToken: {
         type: String,
         required: false,
+    },
+    setProfile:{
+        type: Boolean,
+        default: false
+    },
+    isAccessCalender:{
+        type: Boolean,
+        default:false
     }
 });
 
