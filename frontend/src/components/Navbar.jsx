@@ -1,0 +1,281 @@
+
+
+
+// import { useState } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import axios from 'axios';
+// import { toast } from 'react-toastify';
+
+// function Navbar() {
+//   const navigate = useNavigate();
+//   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+//   const token = localStorage.getItem('token');
+//   const user = token ? JSON.parse(atob(token.split('.')[1])) : null;
+//   console.log('Decoded user:', user);
+
+  
+//   const handleLogout = async () => {
+//     try {
+//         const token = localStorage.getItem('token');
+//         console.log(token);
+//         if (!token) {
+//             throw new Error('No token found');
+//         }
+
+//         await axios.post('http://localhost:4000/api/v1/users/logout', null, {
+//             headers: {
+//                 Authorization: `Bearer ${token}` // Ensure 'Authorization' header is correctly set
+//             },
+//             withCredentials: true // If you use cookies for authentication, ensure this is set
+//         });
+
+//         // Clear token from localStorage and navigate to SignIn
+//         localStorage.removeItem('token');
+//         toast.success('Logged out successfully');
+//         navigate('/signin');
+//     } catch (error) {
+//         console.error('Logout error:', error.message);
+//         toast.error('Error logging out');
+
+//         // Clear token even if an error occurs
+//         localStorage.removeItem('token');
+//         navigate('/signin');
+//     }
+// };
+
+//   return (
+//     <nav className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 shadow-lg">
+//       <div className="container mx-auto flex justify-between items-center">
+//         <div 
+//           className="text-white font-bold text-xl cursor-pointer" 
+//           onClick={() => navigate('/')}
+//         >
+//           EventHub
+//         </div>
+//         <div className="flex items-center space-x-6">
+//           <button 
+//             onClick={() => navigate('/')} 
+//             className="text-white hover:text-blue-200 transition-colors"
+//           >
+//             Home
+//           </button>
+//           <button 
+//             onClick={() => navigate('/about')} 
+//             className="text-white hover:text-blue-200 transition-colors"
+//           >
+//             About Us
+//           </button>
+//           <button 
+//             onClick={() => navigate('/events')} 
+//             className="text-white hover:text-blue-200 transition-colors"
+//           >
+//             Events
+//           </button>
+//          {user?.role =='org' && (
+//           <button 
+//             onClick={() => navigate('/create-event')} 
+//             className="text-white hover:text-blue-200 transition-colors"
+//           >
+//             Create Event
+//           </button>
+//         )
+
+//          }
+
+//           {user ? (
+//             <div className="relative">
+//               <button
+//                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+//                 className="flex items-center space-x-2 focus:outline-none"
+//               >
+//                 <img
+//                   src={user.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name)}
+//                   alt="Profile"
+//                   className="w-8 h-8 rounded-full border-2 border-white"
+//                 />
+//               </button>
+//               {isDropdownOpen && (
+//                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-10">
+//                   <div className="px-4 py-2 border-b border-gray-100">
+//                     <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+//                   </div>
+//                   <button
+//                     onClick={() => {
+//                       setIsDropdownOpen(false);
+//                       navigate('/edit-profile');
+//                     }}
+//                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+//                   >
+//                     Edit Profile
+//                   </button>
+//                   <button
+//                     onClick={() => {
+//                       setIsDropdownOpen(false);
+//                       handleLogout();
+//                     }}
+//                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+//                   >
+//                     Logout
+//                   </button>
+//                 </div>
+//               )}
+//             </div>
+//           ) : (
+//             <button 
+//               onClick={() => navigate('/signin')} 
+//               className="text-white hover:text-blue-200 transition-colors"
+//             >
+//               Sign In
+//             </button>
+//           )}
+//         </div>
+//       </div>
+//     </nav>
+//   );
+// }
+
+// export default Navbar;
+
+
+
+
+
+
+
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+
+function Navbar() {
+  const navigate = useNavigate();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  const token = localStorage.getItem('token');
+  const user = token ? JSON.parse(atob(token.split('.')[1])) : null;
+  console.log(user);
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      await axios.post('http://localhost:4000/api/v1/users/logout', null, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        withCredentials: true
+      });
+
+      localStorage.removeItem('token');
+      toast.success('Logged out successfully');
+      navigate('/signin');
+    } catch (error) {
+      console.error('Logout error:', error.message);
+      toast.error('Error logging out');
+      localStorage.removeItem('token');
+      navigate('/signin');
+    }
+  };
+
+  return (
+    <nav className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 shadow-lg">
+      <div className="container mx-auto flex justify-between items-center">
+        <div 
+          className="text-white font-bold text-xl cursor-pointer" 
+          onClick={() => navigate('/')}
+        >
+          EventHub
+        </div>
+        <div className="flex items-center space-x-6">
+          <button 
+            onClick={() => navigate('/')} 
+            className="text-white hover:text-blue-200 transition-colors"
+          >
+            Home
+          </button>
+          <button 
+            onClick={() => navigate('/about')} 
+            className="text-white hover:text-blue-200 transition-colors"
+          >
+            About Us
+          </button>
+          <button 
+            onClick={() => navigate('/events')} 
+            className="text-white hover:text-blue-200 transition-colors"
+          >
+            Events
+          </button>
+          {user?.role === 'org' && (
+            <button 
+              onClick={() => navigate('/create-event')} 
+              className="text-white hover:text-blue-200 transition-colors"
+            >
+              Create Event
+            </button>
+          )}
+
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 focus:outline-none"
+              >
+                <img
+                  src={user.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name)}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full border-2 border-white"
+                />
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-10">
+                  <div 
+                    className="px-4 py-2 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate('/dashboard');
+                    }}
+                  >
+                    <p className="text-sm font-semibold text-gray-800">{user.name}</p>
+                    <p className="text-xs text-gray-500">View Dashboard</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      navigate('/edit-profile');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button 
+              onClick={() => navigate('/signin')} 
+              className="text-white hover:text-blue-200 transition-colors"
+            >
+              Sign In
+            </button>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+export default Navbar;
