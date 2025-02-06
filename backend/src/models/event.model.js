@@ -6,9 +6,13 @@ const event = new Schema({
         type: String,
         required: true,
         trim: true,
+<<<<<<< HEAD
         lowercase: true,
         unique: true,
         index: true
+=======
+        unique: true
+>>>>>>> main
     },
     avatar: {
         type: String,
@@ -38,6 +42,7 @@ const event = new Schema({
         required: true,
         min: [1, 'Event:: {VALUE} must be a positive number']
     },
+<<<<<<< HEAD
     allowBranch:[
         {
             type: String,
@@ -45,6 +50,8 @@ const event = new Schema({
             enum: User.allowBranch
         }
     ],
+=======
+>>>>>>> main
     girlMinLimit:{
         type: Number,
         default:0
@@ -52,7 +59,12 @@ const event = new Schema({
     allowBranch:{
         type: [String],
         required:true,
+<<<<<<< HEAD
         enum: [...User.Branches,'all']
+=======
+        enum: [...User.Branches ,'all']
+        // enum: ['it','ce','ec','ch', 'all']
+>>>>>>> main
     },
     startDate: {
         type: Date,
@@ -67,8 +79,12 @@ const event = new Schema({
     location: {
         type: String,
         required: true,
+<<<<<<< HEAD
         index: true,
         enum:['MMH','Seminar Hall','Center foyer','Canteen','Narayan Bhavan']
+=======
+        enum:['MMH','Seminar Hall','Center foyer','Canteen','Narayan Bhavan','Online']
+>>>>>>> main
     },
     category: {
         type: String,
@@ -85,7 +101,12 @@ const event = new Schema({
     winnerGroup:{
         type: Schema.Types.ObjectId,
         ref: "Group",
+<<<<<<< HEAD
         required: false
+=======
+        required: false,
+        default: null
+>>>>>>> main
     },
     pricePool: {
         type: Number,

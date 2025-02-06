@@ -33,6 +33,7 @@ const group = new Schema({
     qrCode:{
         type:String
     },
+<<<<<<< HEAD
     event: {
         type: Schema.Types.ObjectId,
         ref: "Event",
@@ -43,13 +44,34 @@ const group = new Schema({
         type:Date,
         required:true,
         expires: 2 * 24 * 60 * 60 * 1000
+=======
+    qrCodeScan:{
+        type: Boolean,
+        default: false,
+        required: true
+    },
+    event: {
+        type: Schema.Types.ObjectId,
+        ref: "Event",
+        required: true
+    },
+    code:{
+        type:String,
+        required:true,
+        unique:true,
+        index:true
+>>>>>>> main
     }
 });
 
 group.pre('save', async function (next) {
     // Logic to generate QR code
     try{
+<<<<<<< HEAD
         this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/group/qr/${this._id}`);
+=======
+        this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/groups/group/qr/${this._id}`);
+>>>>>>> main
     }catch(error){
         throw new ApiError(GroupError.QR_CODE_GENERATION_FAILED);
     }

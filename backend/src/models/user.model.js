@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const {Schema,model,mongoose}=require("mongoose")
 const tokendetails=require("../service/token.js")
 const { createHmac, randomBytes } = require("crypto");
@@ -5,6 +6,17 @@ const ApiError = require("../utils/ApiError.js");
 const { type } = require("os");
 const {UserError} = require("../utils/Constants/User.js");
 const { access } = require("fs");
+=======
+const { Schema, model, mongoose } = require("mongoose")
+const tokendetails = require("../service/token.js")
+const { createHmac, randomBytes } = require("crypto");
+const ApiError = require("../utils/ApiError.js");
+const { type } = require("os");
+const { UserError } = require("../utils/Constants/User.js");
+const RedisClient = require("../service/configRedis.js");
+const { max } = require("moment-timezone");
+
+>>>>>>> main
 /**
  * User Schema:
  * - name: The name of the user.
@@ -12,6 +24,7 @@ const { access } = require("fs");
  * - avatar: The image URL representing the user's avatar.   (later Include Default Avatar)
  * - password: The password for the user account (must be at least 8 characters).
  */
+<<<<<<< HEAD
 
 // const user = new Schema({
 //     name: {
@@ -74,6 +87,8 @@ const { access } = require("fs");
 //     }
     
 // });
+=======
+>>>>>>> main
 const user = new Schema({
     name: {
         type: String,
@@ -147,6 +162,13 @@ const user = new Schema({
     accessToken: {
         type: String,
         required: false,
+<<<<<<< HEAD
+=======
+    },
+    refeshToken: {
+        type: String,
+        required: false,
+>>>>>>> main
     }
 });
 

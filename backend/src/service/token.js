@@ -1,7 +1,10 @@
 require("dotenv").config();
 const jwt=require("jsonwebtoken");
+<<<<<<< HEAD
 const { applyVirtuals } = require("../models/otp.model");
 const { access } = require("fs");
+=======
+>>>>>>> main
 
 const secretKey=process.env.SECRET_KEY;
 
@@ -12,7 +15,12 @@ exports.createTokenForUser= (user)=>{
         email:user.email,
         role:user.role,
         avatar:user.avatar,
+<<<<<<< HEAD
         accessToken:user.accessToken
+=======
+        accessToken:user.accessToken,
+        refreshToken:user.refreshToken,
+>>>>>>> main
     }
     ,secretKey);
 }

@@ -9,6 +9,7 @@ const user_group_join = new Schema({
     Member:{
         type:Schema.Types.ObjectId,
         ref:"User",
+<<<<<<< HEAD
         required:[true,"Member is required"],
         index:true
     },
@@ -16,6 +17,9 @@ const user_group_join = new Schema({
         type:Date,
         required:true,
         expires: 2 * 24 * 60 * 60 * 1000
+=======
+        required:[true,"Member is required"]
+>>>>>>> main
     }
 });
 
