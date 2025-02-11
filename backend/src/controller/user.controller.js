@@ -13,7 +13,8 @@ const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const Unsafe_User = require("../models/unsafe_user.model.js");
 const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 const axios = require('axios');
-
+const User_Group_Join = require("../models/User_Group_Join.model.js");
+const Event = require("../models/event.model.js");
 // // ===============================
 // const { google } = require('googleapis');
 // const axios = require('axios');
@@ -387,7 +388,8 @@ const getEvent = asyncHandler(async (req, res) => {
 
 
 const getGroup = asyncHandler(async (req, res) => {
-    const id = new mongoose.Types.ObjectId(req.user._id);
+    const id = new mongoose.Types.ObjectId(req.params.id);
+    console.log("inside get group",id);
     let groups = await User_Group_Join.find({ Member: id }).populate("Group").exec();
 
     groups = groups.map(element => element.Group);

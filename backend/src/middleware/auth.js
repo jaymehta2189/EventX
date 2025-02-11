@@ -24,7 +24,11 @@ function checkForCleander(req, res, next) {
             switch (error.code) {
                 case 1005: // refresh token expiry
                     // log out and redirect to login page
-                    return res.redirect('http://localhost:5173/');
+                    return res
+                    .status(UserSuccess.LOG_OUT.statusCode)
+                    .clearCookie("token")
+                    .redirect('http://localhost:5173/');
+                    
                 case 1006: // is not login with google account
                     return next();
             }

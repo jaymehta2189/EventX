@@ -171,7 +171,7 @@ function Navbar() {
         withCredentials: true
       });
 
-      localStorage.removeItem('token');
+      // localStorage.removeItem('token');
       toast.success('Logged out successfully');
       navigate('/signin');
     } catch (error) {
@@ -237,11 +237,11 @@ function Navbar() {
                     className="px-4 py-2 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
                     onClick={() => {
                       setIsDropdownOpen(false);
-                      navigate('/dashboard');
+                      navigate(`/dashboard/${user._id}`);
                     }}
                   >
                     <p className="text-sm font-semibold text-gray-800">{user.name}</p>
-                    <p className="text-xs text-gray-500">View Dashboard</p>
+                    {/* <p className="text-xs text-gray-500">View Dashboard</p> */}
                   </div>
                   <button
                     onClick={() => {

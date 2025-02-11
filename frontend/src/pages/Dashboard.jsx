@@ -185,6 +185,7 @@
 
 
 import { useState, useEffect } from 'react';
+import {useParams} from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { 
@@ -203,6 +204,7 @@ import {
 import Navbar from '../components/Navbar';
 
 export default function Dashboard() {
+  const {id}=useParams();
   const [userDetails, setUserDetails] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedQR, setSelectedQR] = useState(null);
@@ -210,14 +212,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+
     const fetchData = async () => {
       try {
-        const userResponse = await axios.get('http://localhost:4000/api/v1/users/user', {
+        const userResponse = await axios.get(`http://localhost:4000/api/v1/users/user/${id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setUserDetails(userResponse.data.data);
 
-        const eventsResponse = await axios.post('http://localhost:4000/api/v1/users/joinedgroups', {
+        const eventsResponse = await axios.get(`http://localhost:4000/api/v1/users/user/${id}/groups`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setEvents(eventsResponse.data.data);

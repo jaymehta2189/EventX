@@ -58,6 +58,7 @@ router.get('/google/callback', async (req, res) => {
 
     if (!email.endsWith('@ddu.ac.in')) {
       // error handle it
+      return res.status(403).send('Only DDU email allowed');
     }
 
     let user = await User.findOne({ email });

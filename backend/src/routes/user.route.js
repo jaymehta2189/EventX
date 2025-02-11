@@ -12,7 +12,7 @@ router.post("/sendOTP",userController.sendOTP);
 
 router.get("/user/:id",userController.viewUserProfile);
 router.get("/user/:id/events",checkForAuth,userController.getEvent);
-router.get("/user/groups",checkForAuth,userController.getGroup);
+router.get("/user/:id/groups",checkForAuth,userController.getGroup);
 
 router.get("/creator",checkForAuth,userController.getEventCreators);
 

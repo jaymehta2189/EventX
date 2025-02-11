@@ -1,4 +1,5 @@
 exports.UserError = Object.freeze({
+    GROUP_NOT_FOUND: { customCode: 1007, message: "Group not found.", statusCode: 404 },
     USER_NOT_FOUND: { customCode: 1001, message: "User not found.", statusCode: 404 },
     USER_ALREADY_EXISTS: { customCode: 1002, message: "User already exists.", statusCode: 400 },
     ALREADY_STOPPED: { customCode: 1003, message: "Already stopped.", statusCode: 400 },
@@ -36,6 +37,7 @@ exports.UserError = Object.freeze({
 });
 
 exports.UserSuccess = Object.freeze({
+    GROUP_FOUND: { customCode: 2020, message: "Group found successfully.", statusCode: 200 },
     USER_CREATED: { customCode: 2001, message: "User created successfully.", statusCode: 201 },
     USER_UPDATED: { customCode: 2002, message: "User updated successfully.", statusCode: 200 },
     ADMIN_UNHOD_VIEW: { customCode: 2003, message: "admin view unsafe hod.", statusCode: 200 },

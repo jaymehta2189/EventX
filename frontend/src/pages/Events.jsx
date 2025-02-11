@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// const API_URL = import.meta.env.VITE_API_URL || '';
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -23,7 +23,7 @@ function Events() {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`${API_URL}/api/v1/events`);
+        const response = await axios.get(`http://localhost:4000/api/v1/events`);
         setEvents(response.data.data);
         setError(null);
       } catch (error) {
