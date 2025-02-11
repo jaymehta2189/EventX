@@ -348,7 +348,7 @@ async function getOrgIdByBranch(branch) {
                     }
                 }
 
-                pipeline.reset();
+                pipeline = RedisClient.pipeline();
             }
         } while (cursor !== '0');
 
@@ -515,7 +515,7 @@ async function getUnVerifyOrgIdByBranch(branch) {
                     }
                 }
 
-                pipeline.reset();
+                pipeline =  RedisClient.pipeline();
             }
         } while (cursor !== '0');
 

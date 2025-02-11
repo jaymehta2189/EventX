@@ -16,12 +16,14 @@ const moment = require('moment-timezone');
 const { google } = require('googleapis');
 const passport = require("passport");
 const e = require("express");
+const { EventError } = require("../utils/Constants/Event");
 
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
 
     const existSameNameGroupInEvent =
         await Group.findOne({ event: new mongoose.Types.ObjectId(eventId), name: groupName }).select("_id").lean();
+
 
     if (existSameNameGroupInEvent) {
         throw new ApiError(GroupError.SAME_GROUP_EXISTS);
@@ -123,6 +125,10 @@ const validateUser = async (eventId, userId) => {
 
         const event = events[0];
 
+        // if(event.groupLimit < event.joinGroup + 1){
+        //     throw new ApiError(EventError.EVENT_FULL);
+        // }
+
         const users = await cacheData.GetUserDataById('$', userId);
 
         if (users.length === 0) {
@@ -167,6 +173,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
     if (!name || !event) {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
+    
     const session = await mongoose.startSession();
 
     const AllValidatePromise = [
@@ -409,7 +416,7 @@ async function getGroupDetails(eventId, userId) {
         usersName: userName
     };
 };
-async function SetCalender(eventId, refershToken) {
+async function SetCalender(eventId, accessToken) {
     try {
         const eventdetails = await cacheData.GetEventDataById("$", eventId);
         const eventdetail = eventdetails[0];
@@ -418,7 +425,7 @@ async function SetCalender(eventId, refershToken) {
 
         const oauth2Client = new google.auth.OAuth2();
 
-        oauth2Client.setCredentials({ access_token: refershToken });
+        oauth2Client.setCredentials({ access_token: accessToken });
         const calendar = google.calendar({ version: 'v3' });
         console.log("Google Calendar Connected");
         const eventcreation = {
@@ -443,6 +450,7 @@ async function SetCalender(eventId, refershToken) {
 
 module.exports = {
     // createGroup,
+    // pending roll back cache data in create group and join group
     LeaderCreateGroup,
     UserJoinGroup,
     getGroupDetails,

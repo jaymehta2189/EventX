@@ -3,6 +3,8 @@ exports.UserError = Object.freeze({
     USER_ALREADY_EXISTS: { customCode: 1002, message: "User already exists.", statusCode: 400 },
     ALREADY_STOPPED: { customCode: 1003, message: "Already stopped.", statusCode: 400 },
     ALREADY_RESUMED: { customCode: 1004, message: "Already resumed.", statusCode: 400 },
+    REFRESH_TOKEN_EXPIRY: {customCode: 1005, message: "refresh token expiry.",statusCode:400},
+    IS_NOT_GOOGLE_USER: {customCode:1006 , message:"user is not google with google account.",statusCode:400},
     
     MISSING_EMAIL: { customCode: 1010, message: "Email is missing.", statusCode: 400 },
     INVALID_EMAIL: { customCode: 1011, message: "The email provided is invalid.", statusCode: 400 },

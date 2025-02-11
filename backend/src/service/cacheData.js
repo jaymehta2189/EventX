@@ -45,7 +45,7 @@ async function cacheEvent(...eventes) {
 
         if (moment.tz(Date.now(), "Asia/Kolkata").isBefore(moment(startDate))) {
             pipeline
-                .hset(`Event:Search:Data:${Idcount + index}`, 'id', element._id)
+                .set(`Event:Search:Data:${Idcount + index}`, element._id)
                 .expire(`Event:Search:Data:${Idcount + index}`, ttlInSeconds);
         }
 
@@ -56,8 +56,8 @@ async function cacheEvent(...eventes) {
         if (moment.tz(Date.now(), "Asia/Kolkata").isBefore(moment(endDate))) {
             pipeline.call('JSON.SET', `Event:FullData:${element._id}`, '$', JSON.stringify(element))
                 .expire(`Event:FullData:${element._id}`, ttlInSecondsFullData)
-                .sadd(`Event:Org:${element.creator}`, element._id)
-                .expire(`Event:Org:${element.creator}`, ttlInSecondsFullData);
+                .sadd(`Event:Org:${element.creator}`, element._id);
+                // .expire(`Event:Org:${element.creator}`, ttlInSecondsFullData);
         }
     });
 
@@ -188,7 +188,7 @@ async function GetEventIdsByUserId(userId) {
                     }
                 });
 
-                pipeline.reset();
+                pipeline = RedisClient.pipeline();
             }
         } while (cursor !== '0');
 
@@ -366,7 +366,7 @@ async function GetGroupIdsByUserId(userId) {
                     }
                 });
 
-                pipeline.reset();
+                pipeline =  RedisClient.pipeline();
             }
         } while (cursor !== '0');
         return groupId;

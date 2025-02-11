@@ -39,7 +39,7 @@ const GroupRouter = require("./routes/group.route.js");
 const RedisClient = require("./service/configRedis.js");
 
 // ============================
-const AuthRouter = require("./routes/auth.route.js");
+const {AuthRouter} = require("./routes/auth.route.js");
 // ============================
 
 const { exit } = require("process");
