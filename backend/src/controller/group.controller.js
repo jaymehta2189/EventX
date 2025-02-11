@@ -299,7 +299,6 @@ const validateAvailableSpot = async (event, userId, code) => {
         throw new ApiError(GroupError.LESS_GIRL, { count: missingGirls });
     }
 };
-
 const UserJoinGroup = asyncHandler(async (req, res) => {
     const { code, event } = req.body;
 
@@ -308,17 +307,16 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
     }
 
     const session = await mongoose.startSession();
-
-    const [user] = await Promise.all([
-        validateUser(event, req.user._id),
-        validateAvailableSpot(event, req.user._id, code)
-    ]);
+    session.startTransaction();
 
     try {
+        // ✅ Pass session to all queries
+        const [user] = await Promise.all([
+            validateUser(event, req.user._id, session),  // ✅ Pass session
+            validateAvailableSpot(event, req.user._id, code, session)  // ✅ Pass session
+        ]);
 
-        session.startTransaction();
-
-        const group = await Group.findOne({ code }).select("_id").lean();
+        const group = await Group.findOne({ code }).select("_id").lean().session(session); // ✅ Attach session
 
         const userEventJoinPromise = User_Event_Join.create([{
             Event: event,
@@ -334,37 +332,38 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
         if (user.isGoogleUser) {
             await SetCalender(event, user.accessToken);
-            console.log("Calender Set");
+            console.log("Calendar Set");
         }
 
-        await Promise.all([
-            RedisClient.sadd(`Group:Join:${group._id}`, user),
-            RedisClient.sadd(`Event:Join:users:${event}`, user._id)
-        ]);
-
-        const existGroup = await getGroupDetails(event, user._id);
+        const existGroup = await getGroupDetails(event, user._id, session); // ✅ Ensure session is passed
 
         await session.commitTransaction();
+        session.endSession();
+
+        // ✅ Move Redis operations outside transaction
+        await Promise.all([
+            RedisClient.sadd(`Group:Join:${group._id}`, JSON.stringify(user)), 
+            RedisClient.sadd(`Event:Join:users:${event}`, user._id)
+        ]);
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, existGroup));
 
     } catch (error) {
-
         await session.abortTransaction();
+        session.endSession();
 
         if (error instanceof ApiError) {
             throw error;
         } else if (error.name === "ValidationError") {
             throw new ApiError(GroupError.VALIDATION_ERROR, error.message);
         }
+        
         console.log(error);
         throw new ApiError(GroupError.GROUP_JOIN_FAILED, error.message);
-
-    } finally {
-        session.endSession();
     }
 });
+
 const getUserInGroup = asyncHandler(async (req, res) => {
 
     try {

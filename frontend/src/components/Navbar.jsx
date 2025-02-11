@@ -171,7 +171,7 @@ function Navbar() {
         withCredentials: true
       });
 
-      // localStorage.removeItem('token');
+      localStorage.removeItem('token');
       toast.success('Logged out successfully');
       navigate('/signin');
     } catch (error) {
