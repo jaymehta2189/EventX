@@ -14,17 +14,15 @@ const moment = require("moment-timezone")
 async function preCacheEvents() {
     const limit = 20;
     let page = 0;
-    let events;
+    let events = [];
     try {
         while (true) {
             events = await Event.find().skip(page * limit).limit(limit);
-
             if (events.length > 0) {
                 await cacheEvent(...events);
             } else {
                 break;
             }
-
             page++;
         }
         return 1;

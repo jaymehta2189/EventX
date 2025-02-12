@@ -8,8 +8,6 @@ function checkForCleander(req, res, next) {
         });
     }
 
-
-
     getValidAccessToken(req.user._id).then(tokens => {
 
         if (req.user.accessToken != tokens.accessToken) {
@@ -30,6 +28,7 @@ function checkForCleander(req, res, next) {
                     .redirect('http://localhost:5173/');
                     
                 case 1006: // is not login with google account
+                    console.log("dnkjdnkjv")
                     return next();
             }
         }

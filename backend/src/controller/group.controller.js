@@ -309,14 +309,14 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
-    try {
-        // ✅ Pass session to all queries
-        const [user] = await Promise.all([
-            validateUser(event, req.user._id, session),  // ✅ Pass session
-            validateAvailableSpot(event, req.user._id, code, session)  // ✅ Pass session
-        ]);
+    const [user] = await Promise.all([
+        validateUser(event, req.user._id, session), 
+        validateAvailableSpot(event, req.user._id, code, session)
+    ]);
 
-        const group = await Group.findOne({ code }).select("_id").lean().session(session); // ✅ Attach session
+    try {
+
+        const group = await Group.findOne({ code }).select("_id").lean().session(session);
 
         const userEventJoinPromise = User_Event_Join.create([{
             Event: event,
@@ -335,16 +335,14 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
             console.log("Calendar Set");
         }
 
-        const existGroup = await getGroupDetails(event, user._id, session); // ✅ Ensure session is passed
-
-        await session.commitTransaction();
-        session.endSession();
-
-        // ✅ Move Redis operations outside transaction
         await Promise.all([
-            RedisClient.sadd(`Group:Join:${group._id}`, JSON.stringify(user)), 
+            RedisClient.sadd(`Group:Join:${group._id}`, user._id), 
             RedisClient.sadd(`Event:Join:users:${event}`, user._id)
         ]);
+
+        const existGroup = await getGroupDetails(event, user._id, session);
+
+        await session.commitTransaction();
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, existGroup));
@@ -361,6 +359,8 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
         
         console.log(error);
         throw new ApiError(GroupError.GROUP_JOIN_FAILED, error.message);
+    }finally{
+        session.endSession();
     }
 });
 
@@ -391,7 +391,6 @@ async function getGroupDetails(eventId, userId) {
         return null;
     }
     const groupId = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
-
     let group = null;
     for (const id of groupId) {
         const existUser = await RedisClient.sismember(`Group:Join:${id}`, userId);
