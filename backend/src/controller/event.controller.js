@@ -233,8 +233,7 @@ const findAllEventsByOrgId = async function (orgId, fields = null) {
 
 // add middleware
 const createEvent = asyncHandler(async (req, res) => {
-    let { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, branchs, girlMinLimit, avatar } = req.body;
-    console.log("heeeeeeeeeeeee");
+    let { name, startDate, endDate, location, category, pricePool, description, groupLimit, userLimit, branchs, girlMinLimit } = req.body;
     girlMinLimit = parseInt(girlMinLimit);
     groupLimit = parseInt(groupLimit);
     userLimit = parseInt(userLimit);
@@ -249,17 +248,15 @@ const createEvent = asyncHandler(async (req, res) => {
         validateCategory(category),
         validateLimit(userLimit, girlMinLimit)
     ]);
-    console.log("heeeeeeeeeeeee");
-    if (req.files && req.files.avatar) {
-        const localFilePath = req.files.avatar.path;
-        avatar = await uploadOnCloudinary(localFilePath);
-    }
-    console.log("heeeeeeeeeeeee");
-    let avatarUrl;
-    if (avatar == "undefined" || avatar === null) {
-        avatarUrl = avatar ? avatar : "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736367840/Collaborative-Coding.-A-developer-team-working-together.-min-896x504_mnw9np.webp";
-        console.log(avatarUrl);
-    }
+    let avatar = null;
+    console.log(req.file);
+    console.log(req.file.path);
+if (req.file && req.file.path) {
+    avatar = await uploadOnCloudinary(req.file.path);
+}
+
+let avatarUrl = avatar ? avatar : "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736367840/Collaborative-Coding.-A-developer-team-working-together.-min-896x504_mnw9np.webp";
+
 
     try {
         const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
@@ -642,7 +639,7 @@ const getAllEventCreateByOrg = asyncHandler(async (req, res) => {
         const orgId = req.params.orgId;
         const eventIds = await RedisClient.smembers(`Event:Org:${orgId}`);
         const events = await cacheData.GetEventDataById('$', ...eventIds);
-
+        
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
             .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events));
     } catch (err) {

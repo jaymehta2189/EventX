@@ -1,6 +1,6 @@
 const express = require("express");
 
-const fileUpload = require('express-fileupload');
+// const fileUpload = require('express-fileupload');
 const app = express();
 const cors = require('cors');
 
@@ -25,7 +25,7 @@ app.use(cors({
     credentials:true
 }));
 
-app.use(fileUpload());
+// app.use(fileUpload());
 
 // =======================
 app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: true }));

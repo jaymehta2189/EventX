@@ -1,474 +1,3 @@
-// import { useState } from 'react';
-// import { X, Calendar, MapPin, Upload, DollarSign, Users, School, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
-// import { toast } from 'react-toastify';
-// import axios from 'axios';
-// import { motion, AnimatePresence } from 'framer-motion';
-
-// const STEPS = {
-//   BASIC_INFO: 0,
-//   SCHEDULE: 1,
-//   PARTICIPATION: 2,
-//   AVATAR: 3
-// };
-
-// const CATEGORIES = ['technology', 'sports', 'education'];
-// const BRANCHES = ['CE', 'IT', 'EC ', 'CH'];
-
-// const stepVariants = {
-//   enter: (direction) => ({
-//     x: direction > 0 ? 1000 : -1000,
-//     opacity: 0
-//   }),
-//   center: {
-//     zIndex: 1,
-//     x: 0,
-//     opacity: 1
-//   },
-//   exit: (direction) => ({
-//     zIndex: 0,
-//     x: direction < 0 ? 1000 : -1000,
-//     opacity: 0
-//   })
-// };
-
-// export default function CreateEventModal({ isOpen, onClose }) {
-//   const [step, setStep] = useState(STEPS.BASIC_INFO);
-//   const [direction, setDirection] = useState(0);
-//   const [loading, setLoading] = useState(false);
-//   const [locations, setLocations] = useState([]);
-//   const [formData, setFormData] = useState({
-//     name: '',
-//     category: '',
-//     description: '',
-//     startDate: '',
-//     endDate: '',
-//     location: '',
-//     pricePool: '',
-//     groupLimit: '',
-//     userLimit: '',
-//     girlMinLimit: '',
-//     branchs: [],
-//     avatar: null
-//   });
-
-//   const handleInputChange = (e) => {
-//     const { name, value, type } = e.target;
-//     if (type === 'select-multiple') {
-//       const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
-//       setFormData(prev => ({ ...prev, [name]: selectedOptions }));
-//     } else {
-//       setFormData(prev => ({ ...prev, [name]: value }));
-//     }
-//   };
-
-//   const fetchAvailableLocations = async () => {
-//     if (!formData.startDate || !formData.endDate) return;
-
-//     try {
-//       setLoading(true);
-//       const response = await axios.post('http://localhost:4000/api/v1/events/freelocation', {
-//           startDate: formData.startDate,
-//           endDate: formData.endDate
-//       });
-//       console.log("for location ",response.data.data);
-//       const normalizedLocations = response.data.data.map((location) => ({
-//         id: location, // Use the location string as the id
-//         name: location // Use the location string as the name
-//       }));
-//       setLocations(normalizedLocations);
-//     } catch (error) {
-//       toast.error('Failed to fetch available locations');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleFileChange = (e) => {
-//     const file = e.target.files[0];
-//     if (file) {
-//       setFormData(prev => ({ ...prev, avatar: file }));
-//     }
-//   };
-
-//   const handleSubmit = async () => {
-//     try {
-//       setLoading(true);
-//       const formDataToSend = new FormData();
-//       Object.entries(formData).forEach(([key, value]) => {
-//         if (key === 'branchs') {
-//           formDataToSend.append(key, JSON.stringify(value));
-//         } else {
-//           formDataToSend.append(key, value);
-//         }
-//       });
-
-//       await axios.post('http://localhost:4000/api/v1/events/create', formDataToSend, {
-//         headers: { 'Content-Type': 'multipart/form-data' }
-//       });
-
-//       toast.success('Event created successfully!');
-//       onClose();
-//     } catch (error) {
-//       toast.error(error.response?.data?.message || 'Failed to create event');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const paginate = (newDirection) => {
-//     setDirection(newDirection);
-//     setStep(prev => prev + newDirection);
-//   };
-
-//   const renderStepContent = () => {
-//     switch (step) {
-//       case STEPS.BASIC_INFO:
-//         return (
-//           <motion.div
-//             key="basic-info"
-//             custom={direction}
-//             variants={stepVariants}
-//             initial="enter"
-//             animate="center"
-//             exit="exit"
-//             transition={{
-//               x: { type: "spring", stiffness: 300, damping: 30 },
-//               opacity: { duration: 0.2 }
-//             }}
-//             className="space-y-6"
-//           >
-//             <div className="space-y-4">
-//               <div className="relative">
-//                 <Sparkles className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//                 <input
-//                   type="text"
-//                   name="name"
-//                   value={formData.name}
-//                   onChange={handleInputChange}
-//                   placeholder="Event Name"
-//                   className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 />
-//               </div>
-//               <div className="relative">
-//                 <select
-//                   name="category"
-//                   value={formData.category}
-//                   onChange={handleInputChange}
-//                   className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 >
-//                   <option value="">Select Category</option>
-//                   {CATEGORIES.map(category => (
-//                     <option key={category} value={category.toLowerCase()}>{category}</option>
-//                   ))}
-//                 </select>
-//               </div>
-//               <div>
-//                 <textarea
-//                   name="description"
-//                   value={formData.description}
-//                   onChange={handleInputChange}
-//                   rows="4"
-//                   className="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                   placeholder="Event Description"
-//                 />
-//               </div>
-//             </div>
-//           </motion.div>
-//         );
-
-//       case STEPS.SCHEDULE:
-//         return (
-//           <motion.div
-//             key="schedule"
-//             custom={direction}
-//             variants={stepVariants}
-//             initial="enter"
-//             animate="center"
-//             exit="exit"
-//             transition={{
-//               x: { type: "spring", stiffness: 300, damping: 30 },
-//               opacity: { duration: 0.2 }
-//             }}
-//             className="space-y-6"
-//           >
-//             <div className="grid grid-cols-2 gap-4">
-//               <div className="relative">
-//                 <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//                 <input
-//                   type="datetime-local"
-//                   name="startDate"
-//                   value={formData.startDate}
-//                   onChange={handleInputChange}
-//                   className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 />
-//               </div>
-//               <div className="relative">
-//                 <Calendar className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//                 <input
-//                   type="datetime-local"
-//                   name="endDate"
-//                   value={formData.endDate}
-//                   onChange={handleInputChange}
-//                   onBlur={fetchAvailableLocations}
-//                   className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 />
-//               </div>
-//             </div>
-//             <div className="relative">
-//               <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//               <select
-//                 name="location"
-//                 value={formData.location}
-//                 onChange={handleInputChange}
-//                 className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 disabled={loading || locations.length === 0}
-//               >
-//                 <option value="">Select Location</option>
-//                 {locations.map(location => (
-//                   <option key={location.id} value={location.id}>{location.name}</option>
-//                 ))}
-//               </select>
-//               {loading && (
-//                 <div className="mt-2 text-sm text-gray-500 flex items-center">
-//                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2" />
-//                   Loading available locations...
-//                 </div>
-//               )}
-//             </div>
-//           </motion.div>
-//         );
-
-//       case STEPS.PARTICIPATION:
-//         return (
-//           <motion.div
-//             key="participation"
-//             custom={direction}
-//             variants={stepVariants}
-//             initial="enter"
-//             animate="center"
-//             exit="exit"
-//             transition={{
-//               x: { type: "spring", stiffness: 300, damping: 30 },
-//               opacity: { duration: 0.2 }
-//             }}
-//             className="space-y-6"
-//           >
-//             <div className="relative">
-//               <DollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//               <input
-//                 type="number"
-//                 name="pricePool"
-//                 value={formData.pricePool}
-//                 onChange={handleInputChange}
-//                 placeholder="Prize Pool Amount"
-//                 className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//               />
-//             </div>
-//             <div className="grid grid-cols-2 gap-4">
-//               <div className="relative">
-//                 <Users className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//                 <input
-//                   type="number"
-//                   name="groupLimit"
-//                   value={formData.groupLimit}
-//                   onChange={handleInputChange}
-//                   placeholder="Max Groups"
-//                   className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 />
-//               </div>
-//               <div className="relative">
-//                 <Users className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//                 <input
-//                   type="number"
-//                   name="userLimit"
-//                   value={formData.userLimit}
-//                   onChange={handleInputChange}
-//                   placeholder="Users per Group"
-//                   className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//                 />
-//               </div>
-//             </div>
-//             <div className="relative">
-//               <Users className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//               <input
-//                 type="number"
-//                 name="girlMinLimit"
-//                 value={formData.girlMinLimit}
-//                 onChange={handleInputChange}
-//                 placeholder="Minimum Girls Required"
-//                 className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
-//               />
-//             </div>
-//             <div className="relative">
-//               <School className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-//               <select
-//                 name="branchs"
-//                 multiple
-//                 value={formData.branchs}
-//                 onChange={handleInputChange}
-//                 className="pl-10 w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-200 min-h-[120px]"
-//               >
-//                 {BRANCHES.map(branch => (
-//                   <option key={branch} value={branch.toLowerCase()}>{branch}</option>
-//                 ))}
-//               </select>
-//               <p className="text-sm text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple branches</p>
-//             </div>
-//           </motion.div>
-//         );
-
-//       case STEPS.AVATAR:
-//         return (
-//           <motion.div
-//             key="avatar"
-//             custom={direction}
-//             variants={stepVariants}
-//             initial="enter"
-//             animate="center"
-//             exit="exit"
-//             transition={{
-//               x: { type: "spring", stiffness: 300, damping: 30 },
-//               opacity: { duration: 0.2 }
-//             }}
-//             className="space-y-6"
-//           >
-//             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 transition-all duration-200 hover:border-blue-500">
-//               <div className="text-center">
-//                 <Upload className="mx-auto h-12 w-12 text-gray-400" />
-//                 <div className="mt-4">
-//                   <label htmlFor="file-upload" className="cursor-pointer">
-//                     <span className="mt-2 block text-sm font-medium text-gray-700">
-//                       Drop an image here, or click to select
-//                     </span>
-//                     <input
-//                       id="file-upload"
-//                       name="avatar"
-//                       type="file"
-//                       accept="image/*"
-//                       onChange={handleFileChange}
-//                       className="hidden"
-//                     />
-//                   </label>
-//                 </div>
-//               </div>
-//               {formData.avatar && (
-//                 <motion.div 
-//                   initial={{ opacity: 0, scale: 0.8 }}
-//                   animate={{ opacity: 1, scale: 1 }}
-//                   className="mt-4"
-//                 >
-//                   <img
-//                     src={URL.createObjectURL(formData.avatar)}
-//                     alt="Preview"
-//                     className="mx-auto h-32 w-32 object-cover rounded-lg shadow-lg"
-//                   />
-//                 </motion.div>
-//               )}
-//             </div>
-//           </motion.div>
-//         );
-
-//       default:
-//         return null;
-//     }
-//   };
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 z-50 overflow-y-auto">
-//       <div className="flex min-h-screen items-center justify-center px-4 pt-16 pb-32">
-//         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity" />
-        
-//         <motion.div 
-//           initial={{ opacity: 0, scale: 0.9 }}
-//           animate={{ opacity: 1, scale: 1 }}
-//           className="relative bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl"
-//         >
-//           <button
-//             onClick={onClose}
-//             className="absolute right-4 top-4 text-gray-400 hover:text-gray-500 transition-colors"
-//           >
-//             <X className="h-6 w-6" />
-//           </button>
-
-//           <div className="mb-8">
-//             <div className="flex items-center justify-between">
-//               <h2 className="text-2xl font-bold text-gray-900">Create Event</h2>
-//               <div className="flex items-center space-x-2">
-//                 {Array.from({ length: 4 }).map((_, index) => (
-//                   <motion.div
-//                     key={index}
-//                     initial={false}
-//                     animate={{
-//                       scale: index === step ? 1.2 : 1,
-//                       backgroundColor: index <= step ? '#3B82F6' : '#E5E7EB'
-//                     }}
-//                     className="h-2 w-12 rounded-full transition-all duration-200"
-//                   />
-//                 ))}
-//               </div>
-//             </div>
-//           </div>
-
-//           <AnimatePresence initial={false} custom={direction} mode="wait">
-//             {renderStepContent()}
-//           </AnimatePresence>
-
-//           <motion.div 
-//             initial={{ opacity: 0, y: 20 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             transition={{ delay: 0.2 }}
-//             className="flex justify-between mt-8"
-//           >
-//             <button
-//               type="button"
-//               onClick={() => paginate(-1)}
-//               disabled={step === 0}
-//               className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 ${
-//                 step === 0
-//                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-//                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-//               }`}
-//             >
-//               <ChevronLeft className="h-5 w-5 mr-1" />
-//               Back
-//             </button>
-//             <button
-//               type="button"
-//               onClick={() => {
-//                 if (step === STEPS.AVATAR) {
-//                   handleSubmit();
-//                 } else {
-//                   paginate(1);
-//                 }
-//               }}
-//               disabled={loading}
-//               className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 disabled:bg-blue-300"
-//             >
-//               {loading ? (
-//                 <>
-//                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-//                   Loading...
-//                 </>
-//               ) : step === STEPS.AVATAR ? (
-//                 <>
-//                   Create Event
-//                   <Sparkles className="h-5 w-5 ml-1" />
-//                 </>
-//               ) : (
-//                 <>
-//                   Next
-//                   <ChevronRight className="h-5 w-5 ml-1" />
-//                 </>
-//               )}
-//             </button>
-//           </motion.div>
-//         </motion.div>
-//       </div>
-//     </div>
-//   );
-// }
 
 
 import { useState } from 'react';
@@ -588,31 +117,63 @@ export default function CreateEventModal({ isOpen, onClose }) {
       setFormData(prev => ({ ...prev, avatar: file }));
     }
   };
-
   const handleSubmit = async () => {
     try {
-      setLoading(true);
-      const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'branchs') {
-          formDataToSend.append(key, JSON.stringify(value));
-        } else {
-          formDataToSend.append(key, value);
+        setLoading(true);
+        const formDataToSend = new FormData();
+        
+        // Log the avatar file before appending
+        console.log("Avatar file:", formData.avatar);
+        
+        // Append all form fields correctly
+        Object.entries(formData).forEach(([key, value]) => {
+            if (key === "branchs") {
+                formDataToSend.append(key, JSON.stringify(value));  // ✅ Convert array to string
+            } else if (key === "avatar" && value instanceof File) {
+                console.log("Appending file:", value.name, value.size);
+                formDataToSend.append("avatar", value); // ✅ Correct way to append a file
+            } else if (key !== "avatar") {
+                formDataToSend.append(key, value);
+            }
+        });
+
+        // Log all form data entries before sending
+        console.log("FormData contents before sending:");
+        for (let pair of formDataToSend.entries()) {
+            console.log(pair[0], ':', pair[1]);
         }
-      });
 
-      await axios.post('http://localhost:4000/api/v1/events/event', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+        // Make the request with proper headers
+        const response = await axios.post(
+            'http://localhost:4000/api/v1/events/event', 
+            formDataToSend,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                onUploadProgress: (progressEvent) => {
+                    const percentCompleted = Math.round(
+                        (progressEvent.loaded * 100) / progressEvent.total
+                    );
+                    console.log("Upload progress:", percentCompleted);
+                },
+            }
+        );
 
-      toast.success('Event created successfully!');
-      onClose();
+        console.log("Upload response:", response.data);
+        toast.success('Event created successfully!');
+        onClose();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create event');
+        console.error("Upload error:", error);
+        toast.error(
+            error.response?.data?.message || 
+            error.message || 
+            'Failed to create event'
+        );
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const paginate = (newDirection) => {
     setDirection(newDirection);
