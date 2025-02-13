@@ -112,6 +112,7 @@ import Events from './pages/Events';
 import EventDetails from './pages/EventDetails';
 import EventRegistration from './pages/EventRegistration';
 import CreateEvent from './pages/CreateEvent';
+import GroupsPage from './pages/GroupsPage';
 import Dashboard from './pages/Dashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -140,6 +141,12 @@ function App() {
               </PrivateRoute>
             } 
           />
+          <Route path="/groups/:eventId" 
+          element={
+          <PrivateRoute>
+            <GroupsPage />
+          </PrivateRoute>}
+           />
           <Route 
             path="/events/:id" 
             element={
