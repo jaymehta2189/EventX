@@ -1,7 +1,6 @@
 import { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import axios from 'axios';
 import { AuthContext } from './AuthContext';
 import { toast } from 'react-toastify';
 
@@ -10,27 +9,24 @@ function AuthRedirect() {
   const { setAuthToken } = useContext(AuthContext);
 
   useEffect(() => {
-    // Try to get the token from the cookie
     const token = Cookies.get('token');
     if (token) {
-      // Store token in localStorage and update axios headers
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Update our global auth state
-      setAuthToken(token);
-      // Remove the token cookie so it isn’t processed again
-      Cookies.remove('token');
-      // Optionally, show a success message
+      setAuthToken(token); // This will trigger the AuthContext useEffect to handle localStorage and axios
       toast.success('Google login successful!');
-      // Redirect to the home page (or wherever)
       navigate('/home');
     } else {
-      // If no token is found, redirect to sign in
       navigate('/signin');
     }
   }, [navigate, setAuthToken]);
 
-  return <div>Processing authentication...</div>;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-md">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Processing authentication...</p>
+      </div>
+    </div>
+  );
 }
 
 export default AuthRedirect;

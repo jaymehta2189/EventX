@@ -1,24 +1,53 @@
 import React, { createContext, useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
-// Create the context
 export const AuthContext = createContext();
 
-// Create a provider component
 export function AuthProvider({ children }) {
-  // Initialize state from localStorage if available
-  const [authToken, setAuthToken] = useState(localStorage.getItem('token') || null);
+  const [authToken, setAuthToken] = useState(() => {
+    // Check for token in both localStorage and cookies on initial load
+    const localToken = localStorage.getItem('token');
+    const cookieToken = Cookies.get('token');
+    
+    if (cookieToken) {
+      // If token exists in cookie, store it in localStorage but keep the cookie
+      localStorage.setItem('token', cookieToken);
+      return cookieToken;
+    }
+    
+    // If token exists in localStorage, set it in cookie as well
+    if (localToken) {
+      Cookies.set('token', localToken, { path: '/' });
+    }
+    
+    return localToken || null;
+  });
 
   useEffect(() => {
-    // If a token exists in localStorage, set axios default header
     if (authToken) {
+      // Set axios default header when token changes
       axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      // Ensure token is in both localStorage and cookie
+      localStorage.setItem('token', authToken);
+      Cookies.set('token', authToken, { path: '/' });
+    } else {
+      // Clear axios header, localStorage, and cookie when token is null
+      delete axios.defaults.headers.common['Authorization'];
+      localStorage.removeItem('token');
+      Cookies.remove('token');
     }
   }, [authToken]);
 
+  const logout = () => {
+    setAuthToken(null);
+    localStorage.removeItem('token');
+    Cookies.remove('token');
+    delete axios.defaults.headers.common['Authorization'];
+  };
+
   return (
-    <AuthContext.Provider value={{ authToken, setAuthToken }}>
+    <AuthContext.Provider value={{ authToken, setAuthToken, logout }}>
       {children}
     </AuthContext.Provider>
   );

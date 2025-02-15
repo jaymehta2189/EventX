@@ -117,7 +117,7 @@ router.get('/google/callback', async (req, res) => {
     return res
       .status(UserSuccess.LOG_IN.statusCode)
       .cookie('token', token, { path: '/' })
-      .redirect(`http://localhost:5173`);
+      .redirect(`http://localhost:5173/home`);
 
   } catch (error) {
     console.error('Error during Google OAuth:', error);

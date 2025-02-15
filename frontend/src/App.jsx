@@ -121,7 +121,17 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <ToastContainer autoClose={1000} />
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
         <Routes>
           {/* Dedicated route to handle token processing */}
           <Route path="/auth/redirect" element={<AuthRedirect />} />
@@ -141,12 +151,14 @@ function App() {
               </PrivateRoute>
             } 
           />
-          <Route path="/groups/:eventId" 
-          element={
-          <PrivateRoute>
-            <GroupsPage />
-          </PrivateRoute>}
-           />
+          <Route 
+            path="/groups/:eventId" 
+            element={
+              <PrivateRoute>
+                <GroupsPage />
+              </PrivateRoute>
+            }
+          />
           <Route 
             path="/events/:id" 
             element={
@@ -181,7 +193,7 @@ function App() {
           />
         </Routes>
       </Router>
-    </AuthProvider>
+    </AuthProvider> 
   );
 }
 

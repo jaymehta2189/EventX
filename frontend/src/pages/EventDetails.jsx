@@ -35,7 +35,9 @@ function EventDetails() {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}`);
+        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}` ,{
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
         setEvent(response.data.data.event);
         setExistingGroup(response.data.data.existGroup);
       } catch (error) {
