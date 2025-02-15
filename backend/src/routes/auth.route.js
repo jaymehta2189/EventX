@@ -13,7 +13,7 @@ require('dotenv').config();
 
 const axios = require('axios');
 const ApiError = require('../utils/ApiError.js');
-const RedisClient = require('../service/configRedis.js');
+const {RedisClient} = require('../service/configRedis.js');
 const { default: mongoose } = require('mongoose');
 
 const oauth2Client = new OAuth2Client(

@@ -10,7 +10,7 @@ const User_Event_Join = require("../models/User_Event_Join.model");
 const { GroupError, GroupSuccess } = require("../utils/Constants/Group");
 const otpGenerator = require("otp-generator");
 
-const RedisClient = require("../service/configRedis");
+const {RedisClient} = require("../service/configRedis");
 const cacheData = require("../service/cacheData");
 const moment = require('moment-timezone');
 const { google } = require('googleapis');
@@ -217,11 +217,10 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         await Promise.all([userEventJoinPromise, userGroupJoinPromise, eventUpdatePromise]);
 
-        console.log(req.user.refershToken);
+        console.log(user.refershToken);
 
         if (user.isGoogleUser) {
-            await SetCalender(event, req.user.accessToken);
-            console.log("Calender Set");
+            await SetCalender(event, user.accessToken);
         }
 
         const pipeline = RedisClient.pipeline();
@@ -246,7 +245,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        console.log("Group Created", existGroup);
+        // console.log("Group Created", existGroup);
 
         return res.status(GroupSuccess.GROUP_CREATED.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_CREATED, existGroup));
@@ -349,7 +348,6 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
     } catch (error) {
         await session.abortTransaction();
-        session.endSession();
 
         if (error instanceof ApiError) {
             throw error;
@@ -383,6 +381,10 @@ const getUserInGroup = asyncHandler(async (req, res) => {
 
 });
 
+async function VerifiedGroup(eventId , groupId) {
+    
+}
+
 async function getGroupDetails(eventId, userId) {
 
     const existGroup = await RedisClient.sismember(`Event:Join:users:${eventId}`, userId);
@@ -400,18 +402,24 @@ async function getGroupDetails(eventId, userId) {
             break;
         }
     }
+
     const leaderNames = await cacheData.GetUserDataById('$.name', group.groupLeader);
     const leaderName = leaderNames[0];
     const usersId = await RedisClient.smembers(`Group:Join:${group._id}`);
 
-    let userName = await cacheData.GetUserDataById('$.name', ...usersId);
-    const userNameWithoutLeader = userName.filter(name => name !== leaderName);
+    let users = await cacheData.GetUserDataById('$.name', ...usersId);
+
+    const userNameWithoutLeader = users.filter(user => user.name !== leaderName).map(user => user.name);
 
     userName = [leaderName, ...userNameWithoutLeader];
+
+    const CanGroupVerified = await VerifiedGroup();
+
     return {
         name: group.name,
         code: group.code,
-        usersName: userName
+        usersName: userName,
+        isVerified: CanGroupVerified
     };
 };
 async function SetCalender(eventId, accessToken) {
@@ -442,7 +450,6 @@ async function SetCalender(eventId, accessToken) {
         console.log("Google Calendar Event Created:", response.data);
     } catch (error) {
         console.error("Error creating event in Google Calendar:", error);
-        res.status(500).json({ message: 'Error creating event', error: error.message });
     }
 }
 

@@ -9,6 +9,7 @@ exports.UserError = Object.freeze({
     
     MISSING_EMAIL: { customCode: 1010, message: "Email is missing.", statusCode: 400 },
     INVALID_EMAIL: { customCode: 1011, message: "The email provided is invalid.", statusCode: 400 },
+    INVALID_DDU_EMAIL: { customCode: 1012, message: "Login with Only DDU Email.", statusCode: 400 },
 
     MISSING_ROLE: { customCode: 1020, message: "Role is missing.", statusCode: 400 },
     INVALID_ROLE: { customCode: 1021, message: "The role provided is invalid.", statusCode: 400 },

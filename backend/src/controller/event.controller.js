@@ -8,7 +8,7 @@ const moment = require("moment-timezone");
 const { EventError, EventSuccess } = require("../utils/Constants/Event");
 
 const { getGroupDetails } = require("./group.controller");
-const RedisClient = require("../service/configRedis");
+const {RedisClient} = require("../service/configRedis");
 const cacheData = require("../service/cacheData");
 const Group = require("../models/group.model");
 
@@ -91,9 +91,9 @@ async function validateDate(startDate, endDate) {
 async function validateBranch(branchs) {
     if (typeof branchs === 'string') {
         try {
-            branchs = JSON.parse(branchs); // Parse stringified array if needed
+            branchs = JSON.parse(branchs);
         } catch (error) {
-            throw new ApiError(EventError.INVALID_BRANCH); // Handle invalid input
+            throw new ApiError(EventError.INVALID_BRANCH);
         }
     }
 

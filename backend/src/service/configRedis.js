@@ -2,6 +2,9 @@ const Redis = require('ioredis');
 
 const RedisClient = new Redis();
 
+const pubClient = new Redis();
+const subClient = pubClient.duplicate();
+
 RedisClient.ClearRedisSync = async ()=>{
     try {
         const result = await RedisClient.call('FLUSHALL', 'SYNC');
@@ -20,4 +23,4 @@ RedisClient.ClearRedisAsync = async ()=>{
     }
 };
 
-module.exports = RedisClient;
+module.exports = {RedisClient,pubClient,subClient};

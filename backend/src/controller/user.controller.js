@@ -6,8 +6,8 @@ const mongoose = require("mongoose");
 const OTP = require("../models/otp.model");
 const otpGenerator = require("otp-generator");
 const Group = require("../models/group.model.js");
-const {createTokenForUser} = require("../service/token.js");
-const RedisClient = require("../service/configRedis.js")
+const { createTokenForUser } = require("../service/token.js");
+const { RedisClient } = require("../service/configRedis.js")
 const cacheData = require("../service/cacheData.js")
 const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const Unsafe_User = require("../models/unsafe_user.model.js");
@@ -128,7 +128,7 @@ async function validateEmail(email) {
     }
 
     if (!User.emailPattern.test(email)) {
-        throw new ApiError(UserError.INVALID_EMAIL);
+        throw new ApiError(UserError.INVALID_DDU_EMAIL);
     }
 
     const user = await User.exists({ email });
@@ -283,19 +283,19 @@ const viewUserProfile = asyncHandler(async (req, res) => {
 
 const updateProfile = asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const { role , gender , sem , rollno , contactdetails} = req.body;
+    const { role, gender, sem, rollno, contactdetails } = req.body;
     try {
 
-        const userObject = await cacheData.GetUserDataById("$._id",id);
+        const userObject = await cacheData.GetUserDataById("$._id", id);
 
-        if(userObject.length === 0){
+        if (userObject.length === 0) {
             throw new ApiError(UserError.USER_NOT_FOUND);
         }
 
-        const user = await User.findById({_id:new mongoose.Types.ObjectId(id)});
+        const user = await User.findById({ _id: new mongoose.Types.ObjectId(id) });
 
         user.role = role;
-        user.gender=gender;
+        user.gender = gender;
         user.sem = sem;
         user.rollno = rollno;
         user.contactdetails = contactdetails;
@@ -308,11 +308,11 @@ const updateProfile = asyncHandler(async (req, res) => {
         console.log("after update profile");
         console.log(user);
 
-        const token= createTokenForUser(user);
+        const token = createTokenForUser(user);
 
         return res
             .status(UserSuccess.LOG_IN.statusCode)
-            .cookie("token", token,{path:"/"})
+            .cookie("token", token, { path: "/" })
             .json(new ApiResponse(UserSuccess.LOG_IN, token));
     } catch (error) {
         console.log(error.message);
@@ -373,39 +373,38 @@ const getEvent = asyncHandler(async (req, res) => {
     }
 });
 
-// const getGroup = asyncHandler(async (req, res) => {
-//     try {
-//         const groupIds = await cacheData.GetGroupIdsByUserId(req.params.id);
-//         const groups = await cacheData.GetGroupDataById('$', ...groupIds);
-//         return res
-//             .status(UserSuccess.JOIN_GROUP.statusCode)
-//             .json(new ApiResponse(UserSuccess.JOIN_GROUP, groups));
-//     } catch (error) {
-//         console.log(error.message);
-//         throw new ApiError(UserError.USER_NOT_FOUND);
-//     }
-// });
-
-
 const getGroup = asyncHandler(async (req, res) => {
-    const id = new mongoose.Types.ObjectId(req.params.id);
-    console.log("inside get group",id);
-    let groups = await User_Group_Join.find({ Member: id }).populate("Group").exec();
+    try {
+        const groupIds = await cacheData.GetGroupIdsByUserId(req.params.id);
+        let groups = await cacheData.GetGroupDataById('$', ...groupIds);
 
-    groups = groups.map(element => element.Group);
-
-    for (let element of groups) {
-        if (element.event) {
-            const eventdetials = await Event.findById({_id:new mongoose.Types.ObjectId(element.event)});
-            // element={...element,eventname:eventname.name};
-            element.event=eventdetials;
+        if (!groups.length) {
+            throw new ApiError(UserError.GROUP_NOT_FOUND);
         }
-    }
-    console.log(groups);
-    if (!groups.length) {
+
+        const eventIds = groups.map(group => group.event);
+
+        const eventDetails = await cacheData.GetEventDataById('$', ...eventIds);
+
+        let eventDetailsMap = new Map();
+
+        eventDetails.forEach(event => {
+            eventDetailsMap.set(event._id, event);
+        });
+
+        groups.forEach(group => {
+            group.event = eventDetailsMap.get(group.event);
+        });
+
+        return res.status(UserSuccess.GROUP_FOUND.statusCode).json(new ApiResponse(UserSuccess.GROUP_FOUND, groups));
+
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        console.log(error.message);
         throw new ApiError(UserError.GROUP_NOT_FOUND);
     }
-    res.status(UserSuccess.GROUP_FOUND.statusCode).json(new ApiResponse(UserSuccess.GROUP_FOUND, groups));
 });
 
 // change
@@ -517,7 +516,7 @@ async function getUnVerifyOrgIdByBranch(branch) {
                     }
                 }
 
-                pipeline =  RedisClient.pipeline();
+                pipeline = RedisClient.pipeline();
             }
         } while (cursor !== '0');
 
@@ -638,7 +637,7 @@ module.exports = {
     getGroup,
 
     getEventCreators,
-    
+
     getOrganizationsByBranch,
     getAllOrganizations,
     getUnverifiedOrgs,

@@ -4,7 +4,7 @@ const { createHmac, randomBytes } = require("crypto");
 const ApiError = require("../utils/ApiError.js");
 const { type } = require("os");
 const { UserError } = require("../utils/Constants/User.js");
-const RedisClient = require("../service/configRedis.js");
+const {RedisClient} = require("../service/configRedis.js");
 const { max } = require("moment-timezone");
 
 /**

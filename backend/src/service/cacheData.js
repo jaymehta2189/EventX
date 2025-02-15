@@ -1,4 +1,4 @@
-const RedisClient = require("./configRedis")
+const {RedisClient} = require("./configRedis")
 
 const Event = require("../models/event.model")
 const User = require("../models/user.model")
