@@ -42,7 +42,6 @@ RedisClient.on('ready', async() => {
         cacheConfig.preCacheEvents(),
         cacheConfig.preCacheUser(),
         cacheConfig.preCacheEventJOINGroupAndUser(),
-        cacheConfig.preCacheUnsafeUser(),
         cacheConfig.preCacheAuthority()
     ]);
 

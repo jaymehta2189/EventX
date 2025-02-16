@@ -5,16 +5,12 @@ const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 const OTP = require("../models/otp.model");
 const otpGenerator = require("otp-generator");
-const Group = require("../models/group.model.js");
 const { createTokenForUser } = require("../service/token.js");
 const { RedisClient } = require("../service/configRedis.js")
 const cacheData = require("../service/cacheData.js")
 const { UserError, UserSuccess } = require("../utils/Constants/User.js");
-const Unsafe_User = require("../models/unsafe_user.model.js");
-const { UnSafeUserSuccess } = require("../utils/Constants/UnSafe_User.js");
 const axios = require('axios');
-const User_Group_Join = require("../models/User_Group_Join.model.js");
-const Event = require("../models/event.model.js");
+
 // // ===============================
 // const { google } = require('googleapis');
 // const axios = require('axios');
@@ -408,38 +404,38 @@ const getGroup = asyncHandler(async (req, res) => {
 });
 
 // change
-const approveOrganizationSignup = asyncHandler(async (req, res) => {
-    const { Id } = req.body;
+// const approveOrganizationSignup = asyncHandler(async (req, res) => {
+//     const { Id } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(Id)) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+//     if (!mongoose.Types.ObjectId.isValid(Id)) {
+//         throw new ApiError(UserError.USER_NOT_FOUND);
+//     }
 
-    const unsafeUsers = await cacheData.GetUnsafeUserDataById('$', Id);
+//     const unsafeUsers = await cacheData.GetUnsafeUserDataById('$', Id);
 
-    if (unsafeUsers.length === 0) {
-        throw new ApiError(UserError.USER_NOT_FOUND);
-    }
+//     if (unsafeUsers.length === 0) {
+//         throw new ApiError(UserError.USER_NOT_FOUND);
+//     }
 
-    const unsafeUser = unsafeUsers[0];
+//     const unsafeUser = unsafeUsers[0];
 
-    const user = new User({
-        name: unsafeUser.name,
-        email: unsafeUser.email,
-        password: unsafeUser.password,
-        role: unsafeUser.role,
-    });
+//     const user = new User({
+//         name: unsafeUser.name,
+//         email: unsafeUser.email,
+//         password: unsafeUser.password,
+//         role: unsafeUser.role
+//     });
 
-    await user.save({ validateBeforeSave: false });
+//     await user.save({ validateBeforeSave: false });
 
-    await cacheData.cacheUser(user);
+//     await cacheData.cacheUser(user);
 
-    await Unsafe_User.findByIdAndDelete(Id);
+//     await Unsafe_User.findByIdAndDelete(Id);
 
-    return res
-        .status(UserSuccess.USER_CREATED.statusCode)
-        .json(new ApiResponse(UserSuccess.USER_CREATED, { email: user.email, role: user.role, name: user.name }));
-});
+//     return res
+//         .status(UserSuccess.USER_CREATED.statusCode)
+//         .json(new ApiResponse(UserSuccess.USER_CREATED, { email: user.email, role: user.role, name: user.name }));
+// });
 
 const getEventCreators = asyncHandler(async (req, res) => {
 
@@ -459,7 +455,7 @@ const getOrganizationsByBranch = asyncHandler(async (req, res) => {
     const branch = req.params.branch;
 
     if (!User.Branches.includes(branch.toLowerCase())) {
-        branch = req.user.email.substring(2, 4).toLowerCase();
+        return res.send("write correct branch");
     }
 
     const creatorIds = await getOrgIdByBranch(branch);
@@ -485,76 +481,6 @@ const getAllOrganizations = asyncHandler(async (req, res) => {
 
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, creatorList));
-});
-
-async function getUnVerifyOrgIdByBranch(branch) {
-    try {
-        let cursor = '0';
-        let pipeline = RedisClient.pipeline();
-        let orgs = [];
-        do {
-
-            const [newCursor, keys] = await RedisClient.scan(cursor, 'MATCH', 'Unsafe_User:Email:*');
-
-            cursor = newCursor;
-            if (keys.length > 0) {
-
-                keys.forEach((idResult) => {
-                    const branchCode = idResult.split(":")[2].substring(2, 4).toLowerCase();
-                    if ('all' === branch || branchCode === branch.toLowerCase()) {
-                        pipeline.hmget(idResult, 'id', 'role');
-                    }
-                });
-
-                const eventsData = await pipeline.exec();
-
-                for (const event of eventsData) {
-                    const [error, data] = event;
-                    const [id, role] = data;
-                    if (!error && role === "org") {
-                        orgs.push(id);
-                    }
-                }
-
-                pipeline = RedisClient.pipeline();
-            }
-        } while (cursor !== '0');
-
-        return orgs;
-    } catch (error) {
-        console.error('Error fetching active events:', error);
-        return [];
-    }
-}
-
-const getUnverifiedOrgs = asyncHandler(async (req, res) => {
-    const unverifiedOrgIds = await getUnVerifyOrgIdByBranch('all');
-    const unverifiedOrgs = await cacheData.GetUnsafeUserDataById('$', ...unverifiedOrgIds);
-
-    // if (unverifiedOrgs.length === 0) {
-    //     throw new ApiError(UserError.USER_NOT_FOUND);
-    // }
-
-    return res.status(UserSuccess.USER_FOUND.statusCode)
-        .json(new ApiResponse(UserSuccess.USER_FOUND, unverifiedOrgs));
-});
-
-const getUnverifiedOrgsByBranch = asyncHandler(async (req, res) => {
-    let branch = req.params.branch;
-
-    if (!User.Branches.includes(branch.toLowerCase())) {
-        branch = req.user.email.substring(2, 4).toLowerCase();
-    }
-
-    const unverifiedOrgIds = await getUnVerifyOrgIdByBranch(branch);
-    const unverifiedOrgs = await cacheData.GetUnsafeUserDataById('$', ...unverifiedOrgIds);
-
-    // if (unverifiedOrgs.length === 0) {
-    //     throw new ApiError(UserError.USER_NOT_FOUND);
-    // }
-
-    return res.status(UserSuccess.USER_FOUND.statusCode)
-        .json(new ApiResponse(UserSuccess.USER_FOUND, unverifiedOrgs));
 });
 
 // clean up
@@ -639,11 +565,5 @@ module.exports = {
     getEventCreators,
 
     getOrganizationsByBranch,
-    getAllOrganizations,
-    getUnverifiedOrgs,
-    getUnverifiedOrgsByBranch,
-
-    // change it late bec. google auth
-    approveOrganizationSignup
-    // make for hod
+    getAllOrganizations
 };

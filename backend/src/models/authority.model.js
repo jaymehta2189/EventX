@@ -2,15 +2,7 @@ const {Schema,model,mongoose}=require("mongoose")
 const tokendetails=require("../service/token.js")
 const { createHmac, randomBytes } = require("crypto");
 const ApiError = require("../utils/ApiError.js");
-const { type } = require("os");
 const {UserError} = require("../utils/Constants/User.js");
-/**
- * User Schema:
- * - name: The name of the user.
- * - email: The email address of the user, validated with a regex pattern.
- * - avatar: The image URL representing the user's avatar.   (later Include Default Avatar)
- * - password: The password for the user account (must be at least 8 characters).
- */
 
 const authority = new Schema({
     name: {
@@ -50,7 +42,6 @@ const authority = new Schema({
     },
     password: {
         type: String,
-        required: true,
         minlength: 8 
     }
 });
@@ -58,6 +49,8 @@ const authority = new Schema({
 authority.pre("save",function (next){
     const authority=this;
     // auto generate branch from email
+    // if(role == "hod"){
+    // }
     this.branch = authority.email.substring(2,4).toLowerCase();
 
     if(!authority.isModified("password"))return;

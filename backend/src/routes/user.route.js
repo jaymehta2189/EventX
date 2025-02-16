@@ -18,8 +18,6 @@ router.get("/creator",checkForAuth,userController.getEventCreators);
 
 router.get("/orgs/:branch",checkForAuth,userController.getOrganizationsByBranch);
 router.get("/orgs",checkForAuth,userController.getAllOrganizations);
-router.get("/unorgs",checkForAuth,userController.getUnverifiedOrgs);
-router.get("/unorgs/:branch",checkForAuth,userController.getUnverifiedOrgsByBranch);
 
 router.post("/profile/:id",userController.updateProfile);
 

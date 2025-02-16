@@ -3,27 +3,25 @@ const ApiResponse = require("../utils/ApiResponse");
 const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 const Group = require("../models/group.model");
-const User = require("../models/user.model");
 const Event = require("../models/event.model");
 const User_Group_Join = require("../models/User_Group_Join.model");
 const User_Event_Join = require("../models/User_Event_Join.model");
 const { GroupError, GroupSuccess } = require("../utils/Constants/Group");
 const otpGenerator = require("otp-generator");
 
-const {RedisClient} = require("../service/configRedis");
+const { RedisClient } = require("../service/configRedis");
 const cacheData = require("../service/cacheData");
 const moment = require('moment-timezone');
 const { google } = require('googleapis');
-const passport = require("passport");
-const e = require("express");
 const { EventError } = require("../utils/Constants/Event");
+const { getValidAccessTokenForUserObj } = require("../routes/auth.route.js");
+const { broadcastToRoom } = require("../service/configWebSocket.js");
 
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
 
     const existSameNameGroupInEvent =
         await Group.findOne({ event: new mongoose.Types.ObjectId(eventId), name: groupName }).select("_id").lean();
-
 
     if (existSameNameGroupInEvent) {
         throw new ApiError(GroupError.SAME_GROUP_EXISTS);
@@ -125,9 +123,9 @@ const validateUser = async (eventId, userId) => {
 
         const event = events[0];
 
-        // if(event.groupLimit < event.joinGroup + 1){
-        //     throw new ApiError(EventError.EVENT_FULL);
-        // }
+        if (event.groupLimit < event.joinGroup + 1) {
+            throw new ApiError(EventError.EVENT_FULL);
+        }
 
         const users = await cacheData.GetUserDataById('$', userId);
 
@@ -173,7 +171,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
     if (!name || !event) {
         throw new ApiError(GroupError.MISSING_FIELDS);
     }
-    
+
     const session = await mongoose.startSession();
 
     const AllValidatePromise = [
@@ -183,6 +181,13 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
     ];
 
     const [_, user, code] = await Promise.all(AllValidatePromise);
+
+    const eventData = (await cacheData.GetEventDataById("$", event))[0];
+
+    // change when payment is add :)
+
+    const isReadyForVerification = eventData.girlMinLimit === 0 || (user.gender == "female" && eventData.girlMinLimit == 1);
+
     try {
         session.startTransaction();
 
@@ -191,7 +196,8 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
                 name,
                 groupLeader: user._id,
                 code,
-                event
+                event,
+                isVerified: isReadyForVerification
             }
         ], { session });
 
@@ -219,7 +225,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         console.log(user.refershToken);
 
-        if (user.isGoogleUser) {
+        if (group.isVerified && user.isGoogleUser) {
             await SetCalender(event, user.accessToken);
         }
 
@@ -245,6 +251,12 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
+        if (eventData.joinGroup + 1 == eventData.groupLimit) {
+            eventData.allowBranch.forEach(branch => {
+                broadcastToRoom(branch, { id: event, operation: "remove" }, "remove");
+            });
+        }
+
         // console.log("Group Created", existGroup);
 
         return res.status(GroupSuccess.GROUP_CREATED.statusCode)
@@ -264,6 +276,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
     }
 
 });
+
 const validateAvailableSpot = async (event, userId, code) => {
 
     const group = await Group.findOne({ code }).select("_id").lean();
@@ -298,6 +311,7 @@ const validateAvailableSpot = async (event, userId, code) => {
         throw new ApiError(GroupError.LESS_GIRL, { count: missingGirls });
     }
 };
+
 const UserJoinGroup = asyncHandler(async (req, res) => {
     const { code, event } = req.body;
 
@@ -309,7 +323,7 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     const [user] = await Promise.all([
-        validateUser(event, req.user._id, session), 
+        validateUser(event, req.user._id, session),
         validateAvailableSpot(event, req.user._id, code, session)
     ]);
 
@@ -329,19 +343,21 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
         await Promise.all([userEventJoinPromise, userGroupJoinPromise]);
 
-        if (user.isGoogleUser) {
-            await SetCalender(event, user.accessToken);
-            console.log("Calendar Set");
-        }
+        // if (user.isGoogleUser) {
+        //     await SetCalender(event, user.accessToken);
+        //     console.log("Calendar Set");
+        // }
 
         await Promise.all([
-            RedisClient.sadd(`Group:Join:${group._id}`, user._id), 
+            RedisClient.sadd(`Group:Join:${group._id}`, user._id),
             RedisClient.sadd(`Event:Join:users:${event}`, user._id)
         ]);
 
         const existGroup = await getGroupDetails(event, user._id, session);
 
         await session.commitTransaction();
+
+        broadcastToRoom(`group:${group._id}`, user);
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, existGroup));
@@ -354,11 +370,98 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
         } else if (error.name === "ValidationError") {
             throw new ApiError(GroupError.VALIDATION_ERROR, error.message);
         }
-        
+
         console.log(error);
         throw new ApiError(GroupError.GROUP_JOIN_FAILED, error.message);
-    }finally{
+    } finally {
         session.endSession();
+    }
+});
+
+async function SetCalenders(eventId, users) {
+    try {
+        const eventdetails = await cacheData.GetEventDataById("$", eventId);
+        const eventdetail = eventdetails[0];
+        const oauth2Client = new google.auth.OAuth2();
+        const calendar = google.calendar({ version: 'v3' });
+
+        const eventcreation = {
+            summary: eventdetail.name,
+            description: eventdetail.description,
+            start: { dateTime: eventdetail.startDate, timeZone: 'UTC' },
+            end: { dateTime: eventdetail.endDate, timeZone: 'UTC' },
+        };
+
+        for (const user of users) {
+            oauth2Client.setCredentials({ access_token: user.accessToken });
+            await calendar.events.insert({
+                auth: oauth2Client,
+                calendarId: "primary",
+                resource: eventcreation,
+            });
+        }
+
+    } catch (error) {
+        console.error("Error creating event in Google Calendar:", error);
+    }
+}
+
+const VerificationOfGroup = asyncHandler(async (req, res) => {
+    const { group, event } = req.body;
+    try {
+        const groupData = await cacheData.GetGroupDataById("$.isVerified", group);
+        const eventData = await cacheData.GetEventDataById("$.girlMinLimit", event);
+
+        if (groupData.length === 0 || eventData.length === 0) {
+            throw new ApiError(GroupError.INVALID_GROUP);
+        }
+
+        const usersId = await cacheData.GetUserIdsByGroupId(group);
+
+        const userData = await cacheData.GetUserDataById("$", ...usersId);
+
+        userData.forEach(user => {
+            if (user.gender === "female")
+                eventData--;
+        });
+
+        if (eventData > 0) {
+            throw new ApiError(GroupError.INVALID_VERIFICATION);
+        }
+
+        let users = [];
+        for (const user of userData) {
+            if (user.isGoogleUser) {
+                try {
+                    const token = await getValidAccessTokenForUserObj(user);
+                    user.accessToken = token.accessToken;
+                    users.push(user);
+                } catch (error) {
+
+                }
+            }
+        }
+
+        await SetCalenders(event, users);
+
+        const groupsDetail = await Group.findByIdAndUpdate(
+            new mongoose.Types.ObjectId(group),
+            { $set: { isVerified: true } },
+            { new: true }
+        );
+
+        await RedisClient.call("JSON.SET", `Group:FullData:${group}`, "$", JSON.stringify(groupsDetail));
+
+        return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
+            .json(new ApiResponse(GroupSuccess.GROUP_VERIFIED));
+
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
+
+        console.log(error);
+        throw new ApiError(GroupError.INVALID_VERIFICATION);
     }
 });
 
@@ -381,10 +484,18 @@ const getUserInGroup = asyncHandler(async (req, res) => {
 
 });
 
-async function VerifiedGroup(eventId , groupId) {
-    
-}
+async function VerifiedGroup(eventId, users) {
+    const events = await cacheData.GetEventDataById("$.girlMinLimit", eventId);
 
+    let eventMinGirlCount = events[0];
+
+    users.forEach(user => {
+        if (user.gender === 'female')
+            eventMinGirlCount--;
+    });
+
+    return eventMinGirlCount <= 0 ? "ready" : "notready";
+}
 async function getGroupDetails(eventId, userId) {
 
     const existGroup = await RedisClient.sismember(`Event:Join:users:${eventId}`, userId);
@@ -407,19 +518,24 @@ async function getGroupDetails(eventId, userId) {
     const leaderName = leaderNames[0];
     const usersId = await RedisClient.smembers(`Group:Join:${group._id}`);
 
-    let users = await cacheData.GetUserDataById('$.name', ...usersId);
+    const users = await cacheData.GetUserDataById('$', ...usersId);
+
+    let isReadyForVerification = "verified";
+
+    if (group.isVerified) {
+        isReadyForVerification = await VerifiedGroup(eventId, users);
+    }
 
     const userNameWithoutLeader = users.filter(user => user.name !== leaderName).map(user => user.name);
 
-    userName = [leaderName, ...userNameWithoutLeader];
-
-    const CanGroupVerified = await VerifiedGroup();
+    const usersName = [leaderName, ...userNameWithoutLeader];
 
     return {
         name: group.name,
         code: group.code,
-        usersName: userName,
-        isVerified: CanGroupVerified
+        usersName,
+        isReadyForVerification,
+        _id:group._id
     };
 };
 async function SetCalender(eventId, accessToken) {
@@ -460,6 +576,7 @@ module.exports = {
     UserJoinGroup,
     getGroupDetails,
     getUserInGroup,
+    VerificationOfGroup,
 
     // change frontendurl
     scanGroupQRCode

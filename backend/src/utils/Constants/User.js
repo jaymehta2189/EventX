@@ -54,6 +54,7 @@ exports.UserSuccess = Object.freeze({
     STOP_CLEANUP_SUCCESS:{ customCode: 2013, message: "Stop cleanup successful.", statusCode: 200 },
     RESUME_CLEANUP_SUCCESS:{ customCode: 2014, message: "Resume cleanup successful.", statusCode: 200 },
     USER_FOUND: { customCode: 2015, message: "User found successfully.", statusCode: 200 },
+    LOG_OUT: { customCode: 2016, message: "Log Out.", statusCode: 200 },
 
     EMAIL_VALIDATED: { customCode: 2050, message: "Email validated successfully.", statusCode: 200 },
 

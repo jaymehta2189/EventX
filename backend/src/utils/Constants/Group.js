@@ -7,6 +7,7 @@ exports.GroupError = Object.freeze({
     INVALID_CODE: { customCode: 1205, message: "Invalid code.", statusCode: 400 },
     INVALID_USER: { customCode: 1206, message: "Invalid user.", statusCode: 400 },
     CREATOR_NOT_JOIN: { customCode: 1207, message: "Creator cannot join the group.", statusCode: 400 },
+    INVALID_VERIFICATION: { customCode: 1208, message: "Group verification failed.", statusCode: 400 },
 
     GROUP_LIMIT_EXCEEDED: { customCode: 1210, message: "Group limit exceeded.", statusCode: 400 },
     MISSING_MEMBER_EMAIL: { customCode: 1211, message: "Member email is missing.", statusCode: 400 },
@@ -42,6 +43,7 @@ exports.GroupSuccess = Object.freeze({
     GROUP_CREATED: { customCode: 2201, message: "Group created successfully.", statusCode: 201 },
     GROUP_UPDATED: { customCode: 2202, message: "Group updated successfully.", statusCode: 200 },
     GROUP_FOUND: { customCode: 2203, message: "Group found successfully.", statusCode: 200 },
+    GROUP_VERIFIED: {customCode: 2204,message:"Group Verified.",statusCode:200},
 
     GROUP_NAME_VALIDATED: { customCode: 2250, message: "Group name is validated.", statusCode: 200 },
     MEMBER_ROLE_VALIDATED: { customCode: 2251, message: "Member role is validated.", statusCode: 200 },

@@ -1,5 +1,6 @@
 const { getValidAccessToken } = require('../routes/auth.route.js');
 const ApiError = require('../utils/ApiError.js');
+const {UserSuccess} = require('../utils/Constants/User.js')
 
 function checkForCleander(req, res, next) {
     if (!req.user) {
@@ -22,13 +23,11 @@ function checkForCleander(req, res, next) {
             switch (error.code) {
                 case 1005: // refresh token expiry
                     // log out and redirect to login page
-                    return res
+                return res
                     .status(UserSuccess.LOG_OUT.statusCode)
-                    .clearCookie("token")
-                    .redirect('http://localhost:5173/');
+                    .json(UserSuccess.LOG_OUT);
                     
                 case 1006: // is not login with google account
-                    console.log("dnkjdnkjv")
                     return next();
             }
         }

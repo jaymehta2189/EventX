@@ -35,8 +35,11 @@ function EventDetails() {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}`);
+        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}` ,{
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
         setEvent(response.data.data.event);
+        console.log(response.data.data.existGroup)
         setExistingGroup(response.data.data.existGroup);
       } catch (error) {
         console.error('Error fetching event details:', error);
@@ -158,7 +161,7 @@ function EventDetails() {
                   </span>
                   <span className="flex items-center text-white/90">
                     <Trophy className="w-4 h-4 mr-1" />
-                    ₹{event.pricePool.toLocaleString()}
+                    ₹ {event.pricePool.toLocaleString()}
                   </span>
                 </div>
               </div>

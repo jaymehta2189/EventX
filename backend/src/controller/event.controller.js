@@ -21,6 +21,7 @@ const { uploadOnCloudinary } = require('../utils/cloudinary');
 const { isNumberObject } = require("util/types");
 const { eventNames } = require("process");
 const { error } = require("console");
+const { broadcastToRoom } = require("../service/configWebSocket");
 
 function isundefine(variable) {
     return typeof variable === 'undefined';
@@ -98,7 +99,7 @@ async function validateBranch(branchs) {
     }
 
     const setOfBranch = [...new Set(branchs)];
-    if (!setOfBranch.every(branch => [...User.Branches, 'all'].includes(branch))) {
+    if (!setOfBranch.every(branch => [...User.Branches,'all'].includes(branch))) {
         throw new ApiError(EventError.INVALID_BRANCH);
     };
     return setOfBranch;
@@ -280,6 +281,16 @@ let avatarUrl = avatar ? avatar : "https://res.cloudinary.com/dlswoqzhe/image/up
 
         cacheConfig.cacheEvent(event);
 
+        if(setOfBranch.includes('all')){
+            Event.allowBranch.forEach(branch => {
+                broadcastToRoom(branch,event,"send");
+            });
+        }else {
+            setOfBranch.forEach(branch => {
+                broadcastToRoom(branch,event,"send");
+            });
+        }
+        
         return res
             .status(EventSuccess.EVENT_CREATED.statusCode)
             .json(new ApiResponse(EventSuccess.EVENT_CREATED, { id: event._id }));
@@ -858,73 +869,6 @@ const rankGroupsByEventScore = asyncHandler(async (req, res) => {
     }
 });
 
-const searchAvailableEvents = asyncHandler(async (req, res) => {
-    const { startDate, endDate, location, creator, name, category } = req.body;
-
-    if (!creator && !name && !category && !location && !startDate && !endDate) {
-        throw new ApiError(EventError.PROVIDE_AT_LEAST_ONE_FIELD);
-    }
-
-    let userBranchCode = 'all';
-
-    if (req?.user?.email) {
-        userBranchCode = req.user.email.substring(2, 4).toLowerCase();
-    }
-
-    const activeEvents = await getActiveEventsFromCache();
-
-    const timeLimit = moment.tz(Date.now(), "Asia/Kolkata");
-    const allBranch = userBranchCode === 'all';
-
-    const filteredEvents = activeEvents.filter(event => {
-        const hasValidTimeLimit =
-            new Date(event.timeLimit).getTime() - timeLimit > 7200000;
-        const isAllowedBranch =
-            allBranch || event.allowBranch.includes('all') || event.allowBranch.includes(userBranchCode);
-        const isNotFull = event.joinGroup < event.groupLimit;
-
-        return hasValidTimeLimit && isAllowedBranch && isNotFull;
-    });
-
-    const searchCriteria = {};
-
-    if (startDate) {
-        searchCriteria.startDate = { $gte: moment.tz(startDate, "Asia/Kolkata").toDate() };
-    }
-    if (endDate) {
-        searchCriteria.endDate = { $lte: moment.tz(endDate, "Asia/Kolkata").toDate() };
-    }
-    if (location) {
-        searchCriteria.location = location;
-    }
-    if (creator) {
-        searchCriteria.creator = creator;
-    }
-    if (name) {
-        searchCriteria.name = { $regex: name, $options: 'i' };
-    }
-    if (category) {
-        searchCriteria.category = category;
-    }
-
-    const matchingEvents = filteredEvents.filter(event => {
-        return Object.entries(searchCriteria).every(([key, condition]) => {
-            if (key === 'startDate' || key === 'endDate') {
-                return event[key] &&
-                    ((!condition.$gte || new Date(event[key]) >= condition.$gte) &&
-                        (!condition.$lte || new Date(event[key]) <= condition.$lte));
-            }
-            if (key === 'name') {
-                return event[key] && event[key].match(condition);
-            }
-            return event[key] === condition;
-        });
-    });
-
-    return res.status(EventSuccess.EVENT_FOUND.statusCode)
-        .json(new ApiResponse(EventSuccess.EVENT_FOUND, matchingEvents));
-});
-
 
 module.exports = {
     // function
@@ -939,8 +883,6 @@ module.exports = {
     viewEvent,
     cacheViewEvent,
     SameNameInCache,
-    searchAvailableEvents,
-
     getGroupInEvent,
     getUserInEvent,
     getAllEventCreateByOrg,

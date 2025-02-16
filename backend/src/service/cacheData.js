@@ -4,7 +4,6 @@ const Event = require("../models/event.model")
 const User = require("../models/user.model")
 const Group = require("../models/group.model")
 const Authority = require("../models/authority.model")
-const Unsafe_User = require("../models/unsafe_user.model")
 
 const moment = require("moment-timezone")
 
@@ -374,6 +373,14 @@ async function GetGroupIdsByUserId(userId) {
     }
 }
 
+async function GetUserIdsByGroupId(groupId) {
+    try{
+        return (await RedisClient.smember(`Group:Join:${groupId}`));
+    }catch(error){
+        return [];
+    }
+}
+
 // ============================= User Cache ==================================
 
 async function preCacheUser() {
@@ -530,81 +537,6 @@ async function GetAuthorityDataById(field, ...AuthorityIds) {
     return users;
 }
 
-// ==================================== unsafe_user Cache ============================
-async function preCacheUnsafeUser() {
-    const limit = 100; // Adjust based on acceptable memory usage
-    let page = 0;
-    let unsafe_user;
-
-    try {
-        while (true) {
-            unsafe_user = await Unsafe_User.find().skip(page * limit).limit(limit);
-
-            if (unsafe_user.length > 0) {
-                await cacheUnsafeUser(...unsafe_user);
-            } else {
-                break;
-            }
-
-            page++;
-        }
-
-        return 1;
-    } catch (error) {
-        console.log(error.message);
-        return 0;
-    }
-}
-
-async function cacheUnsafeUser(...unsafe_users) {
-    const pipeline = RedisClient.pipeline();
-
-    unsafe_users.forEach(unsafe_user => {
-        const key = `Unsafe_User:FullData:${unsafe_user._id}`;
-        pipeline.call('JSON.SET', key, '$', JSON.stringify(unsafe_user));
-
-        pipeline.hset(`Unsafe_User:Email:${unsafe_user.email}`, {
-            role: unsafe_user.role,
-            id: unsafe_user._id
-        });
-    });
-
-    await pipeline.exec();
-}
-
-async function GetUnsafeUserDataFromEmail(field, ...Emails) {
-
-    const pipeline = RedisClient.pipeline();
-
-    Emails.forEach(email => {
-        pipeline.hget(`Unsafe_User:Email:${email}`, 'id');
-    });
-
-    const userIds = await pipeline.exec();
-
-    const valiedUserId = userIds.filter(([_, userId]) => Boolean(userId));
-
-    const users = await GetUnsafeUserDataById(field, ...valiedUserId);
-
-    return users;
-}
-
-async function GetUnsafeUserDataById(field, ...Unsafe_UserIds) {
-    const pipeline = RedisClient.pipeline();
-
-    Unsafe_UserIds.forEach(id => {
-        pipeline.call("JSON.GET", `Unsafe_User:FullData:${id}`, field);
-    });
-
-    const usersSTR = await pipeline.exec();
-
-    const users = usersSTR
-        .filter(([_, userSTR]) => Boolean(userSTR))
-        .map(([_, userSTR]) => JSON.parse(userSTR)[0]);
-
-    return users;
-}
-
 // ==================================== Clear Cache ==================================
 
 const ClearAllCacheSYNC = RedisClient.ClearRedisSync;
@@ -627,6 +559,7 @@ module.exports = {
     GetGroupDataById,
     GetGroupIdsByUserId,
     cacheGroupLeaderJoinUser,
+    GetUserIdsByGroupId,
 
     // User cache function
     preCacheUser,
@@ -639,12 +572,6 @@ module.exports = {
     cacheAuthority,
     GetAuthorityDataFromEmail,
     GetAuthorityDataById,
-
-    // unsafe_user cache function
-    preCacheUnsafeUser,
-    cacheUnsafeUser,
-    GetUnsafeUserDataFromEmail,
-    GetUnsafeUserDataById,
 
     // flushe Data
     ClearAllCacheSYNC,

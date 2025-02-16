@@ -30,17 +30,17 @@ const socketConfig = (server) => {
     return io;
 };
 
-const broadcastToRoom = (roomName, data) => {
-    if (io != null) {
-        io.to(roomName).emit('receive-data', data);
+const broadcastToRoom = (roomName,data,operation = "send") => {
+    if (io != null && data != null) {
+        io.to(roomName).emit(operation, data);
     } else {
         console.error('Socket.IO instance is not initialized.');
     }
 };
 
-const broadcastToAll = (data) => {
-    if (io != null) {
-        io.emit('receive-data', data);
+const broadcastToAll = (data,operation = "send") => {
+    if (io != null && data != null) {
+        io.emit(operation, data);
     } else {
         console.error('Socket.IO instance is not initialized.');
     }

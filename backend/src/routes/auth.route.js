@@ -117,7 +117,7 @@ router.get('/google/callback', async (req, res) => {
     return res
       .status(UserSuccess.LOG_IN.statusCode)
       .cookie('token', token, { path: '/' })
-      .redirect(`http://localhost:5173`);
+      .redirect(`http://localhost:5173/home`);
 
   } catch (error) {
     console.error('Error during Google OAuth:', error);
@@ -173,13 +173,47 @@ async function getValidAccessToken(userId) {
     throw new ApiError(UserError.IS_NOT_GOOGLE_USER);
   }
 
-  const isValid = await isAccessTokenValid(user.accessToken);
+  const isValid = user.accessToken && (await isAccessTokenValid(user.accessToken));
 
   if (isValid) {
     return { accessToken: user.accessToken };
   }
 
-  const newTokens = await refreshAccessToken(user.refreshToken);
+  const newTokens = user.refershToken && (await refreshAccessToken(user.refreshToken));
+  
+  if (newTokens) {
+    user.accessToken = newTokens.access_token;
+
+    await User.findByIdAndUpdate(
+      { _id: new mongoose.Types.ObjectId(userId) },
+      { accessToken: newTokens.access_token }
+    );
+
+    await RedisClient.call("JSON.SET", `User:FullData:${userId}`, "$.accessToken", newTokens.access_token);
+
+    return { accessToken: newTokens.access_token, token: createTokenForUser(user) };
+  }
+
+  console.log("ndkjvnkjdvjk");
+
+  throw new ApiError(UserError.REFRESH_TOKEN_EXPIRY);
+}
+
+
+async function getValidAccessTokenForUserObj(user) {
+
+  if (!user.isGoogleUser) {
+    throw new ApiError(UserError.IS_NOT_GOOGLE_USER);
+  }
+
+  const isValid = user.accessToken && (await isAccessTokenValid(user.accessToken));
+
+  if (isValid) {
+    return { accessToken: user.accessToken };
+  }
+
+  const newTokens = user.refershToken && (await refreshAccessToken(user.refreshToken));
+  
   if (newTokens) {
     user.accessToken = newTokens.access_token;
 
@@ -198,5 +232,6 @@ async function getValidAccessToken(userId) {
 
 module.exports = {
   AuthRouter: router,
-  getValidAccessToken
+  getValidAccessToken,
+  getValidAccessTokenForUserObj
 };

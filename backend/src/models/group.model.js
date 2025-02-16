@@ -43,6 +43,10 @@ const group = new Schema({
         ref: "Event",
         required: true
     },
+    isVerified:{
+        type: Boolean,
+        default: false
+    },
     code:{
         type:String,
         required:true,
