@@ -2,7 +2,7 @@ const Router=require("express");
 const router=Router();
 const eventController=require("../controller/event.controller");
 const checkForAuth = require("../middleware/authentication.js");
-const {checkForOrg} = require("../middleware/check.js");
+const {checkForOrg, checkForStaff, checkForAdmin} = require("../middleware/check.js");
 const upload = require('../middleware/multer.js');
 
 router.post("/event/location",checkForAuth,checkForOrg,eventController.FreeLocationFromTime);
@@ -13,6 +13,9 @@ router.get("/event/:id/groups",checkForAuth,eventController.getGroupInEvent);
 router.get("/event/:id/users",checkForAuth,eventController.getUserInEvent);
 router.get("/org/:orgId",checkForAuth,checkForOrg,eventController.getAllEventCreateByOrg);
 router.post("/event/:id/check",checkForAuth,checkForOrg,eventController.validateAndSendHODEmails);
+
+router.get("/staff/events",checkForAuth,checkForStaff,eventController.findAllEvent);
+router.get("/admin/events",checkForAuth,checkForAdmin,eventController.findAllEvent);
 
 router.post("/event/groups/report",checkForAuth,checkForOrg,eventController.generateGroupReportCSV);
 // router.post(

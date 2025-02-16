@@ -64,8 +64,9 @@ function EventRegistration() {
       const token = localStorage.getItem('token');
       await axios.post(`http://localhost:4000/api/v1/groups/create`, registrationData, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+        },
+        withCredentials: true, // Ensures cookies are sent
       });
       toast.success('Registration successful!');
       navigate('/events');

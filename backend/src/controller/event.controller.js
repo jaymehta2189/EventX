@@ -450,11 +450,13 @@ async function cacheFindAllEvent(req, res, next) {
     try {
         const activeEvent = await getActiveEventsFromCache();
 
+        const isNotStaff = (req?.user.role != "admin" || req.user.role != "staff");
+        const branchCode = isNotStaff ?  req.user.email.substring(2, 4).toLowerCase() : 'all';
+
         const filteredEvents = activeEvent.filter(event => {
-            const branchCode = req?.user.email.substring(2, 4).toLowerCase() || 'all';
             const timeDifferenceIsMoreThanTwoHours = new Date(event.timeLimit) - moment.tz(Date.now(), "Asia/Kolkata") > 7200000;
             const isAllowedBranch = branchCode === 'all' || event.allowBranch.includes('all') || event.allowBranch.includes(branchCode);
-            const isFull = event.joinGroup === event.groupLimit;
+            const isFull =  !isNotStaff || event.joinGroup === event.groupLimit;
             return timeDifferenceIsMoreThanTwoHours && isAllowedBranch && !isFull;
         });
 

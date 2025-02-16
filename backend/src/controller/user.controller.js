@@ -10,6 +10,7 @@ const { RedisClient } = require("../service/configRedis.js")
 const cacheData = require("../service/cacheData.js")
 const { UserError, UserSuccess } = require("../utils/Constants/User.js");
 const axios = require('axios');
+const Authority = require("../models/authority.model.js");
 
 // // ===============================
 // const { google } = require('googleapis');
@@ -123,11 +124,10 @@ async function validateEmail(email) {
         throw new ApiError(UserError.MISSING_EMAIL);
     }
 
-    if (!User.emailPattern.test(email)) {
+    if (!User.emailPattern.test(email)&&!email.match(Authority.GeneralPattern)) {
         throw new ApiError(UserError.INVALID_DDU_EMAIL);
     }
-
-    const user = await User.exists({ email });
+    const user = (await User.exists({ email })) || (await Authority.exists({ email }));
 
     if (user) {
         throw new ApiError(UserError.USER_ALREADY_EXISTS);
@@ -161,13 +161,20 @@ const verifyOTP = async function (email, otp) {
 const signinPost = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     try {
-        const token = await User.matchPasswordAndGenerateToken(email, password);
+        if(email.match(User.emailPattern)){
+            const token = await User.matchPasswordAndGenerateToken(email, password);
 
         return res
             .status(UserSuccess.LOG_IN.statusCode)
             .cookie("token", token)
             .json(new ApiResponse(UserSuccess.LOG_IN, token));
+        }
+         const token = await Authority.matchPasswordAndGenerateToken(email, password);
 
+        return res
+            .status(UserSuccess.LOG_IN.statusCode)
+            .cookie("token", token)
+            .json(new ApiResponse(UserSuccess.LOG_IN, token));
     } catch (error) {
         if (error instanceof ApiError) {
             throw error;
@@ -210,43 +217,62 @@ const signupPost = asyncHandler(async (req, res) => {
         name,
         email,
         password,
-        role,
+        
         otp,
     } = req.body;
 
-    if (!name || !password || !role) {
+    if (!name || !password) {
         throw new ApiError(UserError.MISSING_FIELDS);
     }
 
     await verifyOTP(email, otp);
 
+    
     try {
-        // for user role 
-        // if (role === User.allowedRoles[0]) {
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role
-        });
-        // const 
-        await cacheData.cacheUser(user);
+        if(email.match(User.emailPattern)){
+            const user = await User.create({
+                name,
+                email,
+                password,
+               
+            });
+           
+            await cacheData.cacheUser(user);
+    
+            return res
+                .status(UserSuccess.USER_CREATED.statusCode)
+                .json(new ApiResponse(UserSuccess.USER_CREATED, { email: user.email, role: user.role, name: user.name }));
+        }
+        else if(email.match(Authority.StaffEmailPattern)){
+            console.log("staff");
+            const authority = await Authority.create({
+                name,
+                email,
+                password,
+                role: "staff"
+            });
+            console.log(authority);
+            await cacheData.cacheAuthority(authority);
+            console.log("after cache");
+            return res
+                .status(UserSuccess.USER_CREATED.statusCode)
+                .json(new ApiResponse(UserSuccess.USER_CREATED, { email: authority.email, role: authority.role, name: authority.name }));
+        }
+        else if(email.match(Authority.GeneralPattern)){
+            const authority = await Authority.create({
+                name,
+                email,
+                password,
+                role: "admin"
+            });
+            await cacheData.cacheAuthority(authority);
+            return res
+                .status(UserSuccess.USER_CREATED.statusCode)
+                .json(new ApiResponse(UserSuccess.USER_CREATED, { email: authority.email, role: authority.role, name: authority.name }));
+        }
+        
 
-        return res
-            .status(UserSuccess.USER_CREATED.statusCode)
-            .json(new ApiResponse(UserSuccess.USER_CREATED, { email, role, name }));
-        // }
-
-        // await Unsafe_User.collection.insertOne({
-        //     name,
-        //     email,
-        //     password,
-        //     role
-        // });
-
-        // return res
-        //     .status(UnSafeUserSuccess.WAIT_FOR_CONFIRMATION.statusCode)
-        //     .json(UnSafeUserSuccess.WAIT_FOR_CONFIRMATION);
+        
 
     } catch (error) {
 

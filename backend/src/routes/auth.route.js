@@ -6,6 +6,7 @@ const router = express.Router();
 const User = require('../models/user.model'); // Adjust the path to your User model
 const cacheData = require('../service/cacheData.js');
 const moment = require("moment-timezone");
+const Authority = require('../models/authority.model.js');
 
 const { OAuth2Client } = require('google-auth-library');
 
@@ -13,7 +14,7 @@ require('dotenv').config();
 
 const axios = require('axios');
 const ApiError = require('../utils/ApiError.js');
-const {RedisClient} = require('../service/configRedis.js');
+const { RedisClient } = require('../service/configRedis.js');
 const { default: mongoose } = require('mongoose');
 
 const oauth2Client = new OAuth2Client(
@@ -61,64 +62,84 @@ router.get('/google/callback', async (req, res) => {
       return res.status(403).send('Only DDU email allowed');
     }
 
-    let user = await User.findOne({ email });
+    if (email.match(User.emailPattern)) {
+      let user = await User.findOne({ email });
 
-    let isAccessCalender = false;
+      let isAccessCalender = false;
 
-    if (tokens.scope && tokens.scope.includes('https://www.googleapis.com/auth/calendar.events')) {
-      isAccessCalender = true;
-    }
+      if (tokens.scope && tokens.scope.includes('https://www.googleapis.com/auth/calendar.events')) {
+        isAccessCalender = true;
+      }
 
-    if (!user) {
+      if (!user) {
 
-      user = new User({
-        name: profile.name,
-        email,
-        avatar: profile.picture,
-        googleId: profile.id,
-        isGoogleUser: true,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        setProfile: false,
-        isAccessCalender
-      });
+        user = new User({
+          name: profile.name,
+          email,
+          avatar: profile.picture,
+          googleId: profile.id,
+          isGoogleUser: true,
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          setProfile: false,
+          isAccessCalender
+        });
+
+      } else {
+
+        user.accessToken = tokens.access_token;
+        user.refreshToken = tokens.refresh_token || user.refreshToken;
+
+        if (!user.isGoogleUser) {
+          user.avatar = profile.picture,
+            user.googleId = profile.id;
+          user.isGoogleUser = true;
+          user.isAccessCalender = isAccessCalender;
+        }
+      }
 
       await user.save();
       await cacheData.cacheUser(user);
 
-      return res.redirect(
-        `http://localhost:5173/edit-profile?id=${user.id}`
-      );
+      const token = createTokenForUser(user);
+
+      return res
+        .status(UserSuccess.LOG_IN.statusCode)
+        .cookie('token', token, { path: '/' })
+        .redirect(`http://localhost:5173/home`);
 
     }
 
-    user.accessToken = tokens.access_token;
-    user.refreshToken = tokens.refresh_token || user.refreshToken;
+    let authority = await Authority.findOne({ email });
 
-    if (!user.isGoogleUser) {
-      user.avatar =  profile.picture,
-      user.googleId = profile.id;
-      user.isGoogleUser = true;
-      user.isAccessCalender = isAccessCalender;
+    if (!authority) {
+
+      const role = email.match(Authority.StaffEmailPattern) ? 'staff' : 'admin';
+
+      authority = new User({
+        name: profile.name,
+        email,
+        avatar: profile.picture,
+        isGoogleUser: true,
+        role
+      });
+
+    } else {
+      if (!authority.isGoogleUser) {
+        authority.avatar = profile.picture,
+        authority.isGoogleUser = true;
+      }
     }
 
-    await user.save();
-    await cacheData.cacheUser(user);
+    await authority.save();
+    await cacheData.cacheAuthority(authority);
 
-    //have account in website but change to google login
-    if (!user.setProfile) {
-      return res.redirect(
-        `http://localhost:5173/edit-profile?id=${user.id}`
-      );
-    }
-
-    const token = createTokenForUser(user);
+    const token = createTokenForUser(authority);
 
     return res
       .status(UserSuccess.LOG_IN.statusCode)
       .cookie('token', token, { path: '/' })
       .redirect(`http://localhost:5173/home`);
-
   } catch (error) {
     console.error('Error during Google OAuth:', error);
     res.status(500).send('OAuth error');
@@ -180,7 +201,7 @@ async function getValidAccessToken(userId) {
   }
 
   const newTokens = user.refershToken && (await refreshAccessToken(user.refreshToken));
-  
+
   if (newTokens) {
     user.accessToken = newTokens.access_token;
 
@@ -213,7 +234,7 @@ async function getValidAccessTokenForUserObj(user) {
   }
 
   const newTokens = user.refershToken && (await refreshAccessToken(user.refreshToken));
-  
+
   if (newTokens) {
     user.accessToken = newTokens.access_token;
 

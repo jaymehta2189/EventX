@@ -53,7 +53,10 @@ function Events() {
       try {
         setIsLoading(true);
         const response = await axios.get('http://localhost:4000/api/v1/events', {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+          },
+          withCredentials: true, // Ensures cookies are sent
         });
         setEvents(response.data.data || []);
       } catch (error) {

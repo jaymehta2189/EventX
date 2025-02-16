@@ -124,6 +124,9 @@ user.static("matchPasswordAndGenerateToken",async function(email,password){
     if(!user){
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
+    if(user.isGoogleUser){
+        throw new ApiError(UserError.IS_GOOGLE_USER);
+    }
 
     const salt=user.salt;
     const originalpassword=user.password;

@@ -10,7 +10,7 @@ function SignUp() {
     email: '',
     password: '',
     otp: '',
-    role: 'user'
+    
   });
   const [otpSent, setOtpSent] = useState(false);
 
@@ -82,7 +82,7 @@ function SignUp() {
               required
             />
           </div>
-          <div>
+          {/* <div>
             <select
               name="role"
               value={formData.role}
@@ -95,7 +95,7 @@ function SignUp() {
               <option value="admin">Admin</option>
               <option value="hod">HOD</option>
             </select>
-          </div>
+          </div> */}
           <div className="flex gap-2">
             <input
               type="text"

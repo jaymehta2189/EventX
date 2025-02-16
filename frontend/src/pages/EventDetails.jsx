@@ -35,8 +35,11 @@ function EventDetails() {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}` ,{
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+          },
+          withCredentials: true, // Ensures cookies are sent
         });
         setEvent(response.data.data.event);
         console.log(response.data.data.existGroup)
