@@ -591,8 +591,9 @@ const getuserByBranch = asyncHandler(async (req, res) => {
 });
 
 const getUserByEmail = asyncHandler(async (req, res) => {
+    
     const email = req.body.email?.trim().toLowerCase();
-
+    // console.log(email);
     if (!email) {
         throw new ApiError(UserError.INVALID_CREDENTIALS);
     }
@@ -602,7 +603,7 @@ const getUserByEmail = asyncHandler(async (req, res) => {
     if (user.length === 0) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
-
+    // console.log(user);
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, user));
 });
@@ -611,13 +612,13 @@ const modifieUserToOrg = asyncHandler(async (req, res) => {
     const { userId } = req.body;
 
     const user = await cacheData.GetUserDataById("$", userId);
-
+    console.log(user);
     if (user.length === 0) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
-
-    const staffBranch = req.user.email.reverse().substring(10, 12).reverse();
-
+    console.log("j");
+    const staffBranch = req.user.email.split('').reverse().join('').substring(10, 12).split('').reverse().join('');
+    console.log(staffBranch);
     if (staffBranch != user[0].branch) {
         throw new ApiError(UserError.STAFF_NOT_HAVE_ACCESS);
     }
@@ -625,21 +626,21 @@ const modifieUserToOrg = asyncHandler(async (req, res) => {
     if (user[0].role == "org") {
         throw new ApiError(UserError.USER_ALREADY_ORG);
     }
-
-    const a = RedisClient.call("JSON.SET", `User:FullData:${user[0]._id}`, "$", JSON.stringify(user[0]));
-
-    const b = RedisClient.hset(`User:Email:${user[0].email}`, {
+    console.log(user[0]._id);
+     await RedisClient.call("JSON.SET", `User:FullData:${user[0]._id}`, "$", JSON.stringify(user[0]));
+    console.log("before promise");
+     await RedisClient.hset(`User:Email:${user[0].email}`, {
         role: 'org',
         id: user[0]._id
     });
-
-    const c = User.updateOne(
+    console.log("before promise");
+    await User.updateOne(
         { _id: new mongoose.Types.ObjectId(user[0]._id) },
         { $set: { role: "org" } }
     );
 
-    await Promise([a, b, c]);
-
+    // await Promise([a, b, c]);
+    console.log("after promise");
     return res.status(UserSuccess.USER_UPDATED.statusCode)
             .json(new ApiResponse(UserSuccess.USER_UPDATED));
 });
