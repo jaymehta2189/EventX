@@ -124,7 +124,7 @@ async function validateEmail(email) {
         throw new ApiError(UserError.MISSING_EMAIL);
     }
 
-    if (!User.emailPattern.test(email)&&!email.match(Authority.GeneralPattern)) {
+    if (!User.emailPattern.test(email) && !email.match(Authority.GeneralPattern)) {
         throw new ApiError(UserError.INVALID_DDU_EMAIL);
     }
     const user = (await User.exists({ email })) || (await Authority.exists({ email }));
@@ -161,15 +161,15 @@ const verifyOTP = async function (email, otp) {
 const signinPost = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     try {
-        if(email.match(User.emailPattern)){
+        if (email.match(User.emailPattern)) {
             const token = await User.matchPasswordAndGenerateToken(email, password);
 
-        return res
-            .status(UserSuccess.LOG_IN.statusCode)
-            .cookie("token", token)
-            .json(new ApiResponse(UserSuccess.LOG_IN, token));
+            return res
+                .status(UserSuccess.LOG_IN.statusCode)
+                .cookie("token", token)
+                .json(new ApiResponse(UserSuccess.LOG_IN, token));
         }
-         const token = await Authority.matchPasswordAndGenerateToken(email, password);
+        const token = await Authority.matchPasswordAndGenerateToken(email, password);
 
         return res
             .status(UserSuccess.LOG_IN.statusCode)
@@ -217,7 +217,7 @@ const signupPost = asyncHandler(async (req, res) => {
         name,
         email,
         password,
-        
+
         otp,
     } = req.body;
 
@@ -227,23 +227,23 @@ const signupPost = asyncHandler(async (req, res) => {
 
     await verifyOTP(email, otp);
 
-    
+
     try {
-        if(email.match(User.emailPattern)){
+        if (email.match(User.emailPattern)) {
             const user = await User.create({
                 name,
                 email,
                 password,
-               
+
             });
-           
+
             await cacheData.cacheUser(user);
-    
+
             return res
                 .status(UserSuccess.USER_CREATED.statusCode)
                 .json(new ApiResponse(UserSuccess.USER_CREATED, { email: user.email, role: user.role, name: user.name }));
         }
-        else if(email.match(Authority.StaffEmailPattern)){
+        else if (email.match(Authority.StaffEmailPattern)) {
             console.log("staff");
             const authority = await Authority.create({
                 name,
@@ -258,7 +258,7 @@ const signupPost = asyncHandler(async (req, res) => {
                 .status(UserSuccess.USER_CREATED.statusCode)
                 .json(new ApiResponse(UserSuccess.USER_CREATED, { email: authority.email, role: authority.role, name: authority.name }));
         }
-        else if(email.match(Authority.GeneralPattern)){
+        else if (email.match(Authority.GeneralPattern)) {
             const authority = await Authority.create({
                 name,
                 email,
@@ -270,9 +270,9 @@ const signupPost = asyncHandler(async (req, res) => {
                 .status(UserSuccess.USER_CREATED.statusCode)
                 .json(new ApiResponse(UserSuccess.USER_CREATED, { email: authority.email, role: authority.role, name: authority.name }));
         }
-        
 
-        
+
+
 
     } catch (error) {
 
@@ -570,6 +570,80 @@ const resumeCleanupJob = asyncHandler(async (req, res) => {
     }
 });
 
+const getuserByBranch = asyncHandler(async (req, res) => {
+
+    const branch = req?.user.email.reverse().substring(10, 12).reverse();
+
+    if (!branch) {
+        throw new ApiError(UserError.INVALID_CREDENTIALS);
+    }
+
+    const userIds = await RedisClient.smembers(`User:Branch:${branch}`);
+
+    if (userIds.length === 0) {
+        throw new ApiError(UserError.USER_NOT_FOUND);
+    }
+
+    const users = await cacheData.GetUserDataById("$", ...userIds);
+
+    return res.status(UserSuccess.USER_FOUND.statusCode)
+        .json(new ApiResponse(UserSuccess.USER_FOUND, users));
+});
+
+const getUserByEmail = asyncHandler(async (req, res) => {
+    const email = req.body.email?.trim().toLowerCase();
+
+    if (!email) {
+        throw new ApiError(UserError.INVALID_CREDENTIALS);
+    }
+
+    const user = await cacheData.GetUserDataFromEmail("$", email + "@ddu.ac.in");
+
+    if (user.length === 0) {
+        throw new ApiError(UserError.USER_NOT_FOUND);
+    }
+
+    return res.status(UserSuccess.USER_FOUND.statusCode)
+        .json(new ApiResponse(UserSuccess.USER_FOUND, user));
+});
+
+const modifieUserToOrg = asyncHandler(async (req, res) => {
+    const { userId } = req.body;
+
+    const user = await cacheData.GetUserDataById("$", userId);
+
+    if (user.length === 0) {
+        throw new ApiError(UserError.USER_NOT_FOUND);
+    }
+
+    const staffBranch = req.user.email.reverse().substring(10, 12).reverse();
+
+    if (staffBranch != user[0].branch) {
+        throw new ApiError(UserError.STAFF_NOT_HAVE_ACCESS);
+    }
+
+    if (user[0].role == "org") {
+        throw new ApiError(UserError.USER_ALREADY_ORG);
+    }
+
+    const a = RedisClient.call("JSON.SET", `User:FullData:${user[0]._id}`, "$", JSON.stringify(user[0]));
+
+    const b = RedisClient.hset(`User:Email:${user[0].email}`, {
+        role: 'org',
+        id: user[0]._id
+    });
+
+    const c = User.updateOne(
+        { _id: new mongoose.Types.ObjectId(user[0]._id) },
+        { $set: { role: "org" } }
+    );
+
+    await Promise([a, b, c]);
+
+    return res.status(UserSuccess.USER_UPDATED.statusCode)
+            .json(new ApiResponse(UserSuccess.USER_UPDATED));
+});
+
 module.exports = {
 
     viewUserProfile,
@@ -591,5 +665,9 @@ module.exports = {
     getEventCreators,
 
     getOrganizationsByBranch,
-    getAllOrganizations
+    getAllOrganizations,
+
+    getuserByBranch,
+    getUserByEmail,
+    modifieUserToOrg
 };

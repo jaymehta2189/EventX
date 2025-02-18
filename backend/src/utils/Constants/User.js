@@ -27,6 +27,8 @@ exports.UserError = Object.freeze({
     MISSING_FIELDS: { customCode: 1050, message: "Required fields are missing.", statusCode: 400 },
     COOKIE_NOT_AVAILABLE: { customCode: 1051, message: "Cookie not available.", statusCode: 400 },
     INVALID_CREDENTIALS: { customCode: 1052, message: "Invalid credentials.", statusCode: 400 },
+    STAFF_NOT_HAVE_ACCESS: {customCode:1053,message:"Staff not have access.",statusCode:400},
+    USER_ALREADY_ORG: {customCode:1054,message:"student already Org.",statusCode:400},
 
     USER_CREATION_FAILED: { customCode: 1075, message: "User creation failed.", statusCode: 500 },
     ADMIN_FAILED_HODS :{ customCode: 1076, message: "Admin view unsafe hod failed.", statusCode: 500 },

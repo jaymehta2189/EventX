@@ -419,6 +419,8 @@ async function cacheUser(...users) {
             role: user.role,
             id: user._id
         });
+
+        pipeline.sadd(`User:Branch:${user.branch}`,user._id);
     });
 
     await pipeline.exec();

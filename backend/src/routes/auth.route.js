@@ -220,7 +220,6 @@ async function getValidAccessToken(userId) {
   throw new ApiError(UserError.REFRESH_TOKEN_EXPIRY);
 }
 
-
 async function getValidAccessTokenForUserObj(user) {
 
   if (!user.isGoogleUser) {
@@ -239,13 +238,13 @@ async function getValidAccessTokenForUserObj(user) {
     user.accessToken = newTokens.access_token;
 
     await User.findByIdAndUpdate(
-      { _id: new mongoose.Types.ObjectId(userId) },
+      { _id: new mongoose.Types.ObjectId(user._id) },
       { accessToken: newTokens.access_token }
     );
 
-    await RedisClient.call("JSON.SET", `User:FullData:${userId}`, "$.accessToken", newTokens.access_token);
+    await RedisClient.call("JSON.SET", `User:FullData:${user._id}`, "$.accessToken", newTokens.access_token);
 
-    return { accessToken: newTokens.access_token, token: createTokenForUser(user) };
+    return { accessToken: newTokens.access_token, token: createTokenForUser(user._id) };
   }
 
   throw new ApiError(UserError.REFRESH_TOKEN_EXPIRY);

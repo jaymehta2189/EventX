@@ -3,6 +3,7 @@ const router=Router();
 const userController=require("../controller/user.controller");
 // const checkForAuth= require("../middleware/authentication.js");
 // console.log(typeof checkForAuth);
+const {checkForStaff} = require("../middleware/check.js");
 const checkForAuth = require("../middleware/authentication.js");
 
 router.post("/signup",userController.signupPost);
@@ -20,6 +21,9 @@ router.get("/orgs/:branch",checkForAuth,userController.getOrganizationsByBranch)
 router.get("/orgs",checkForAuth,userController.getAllOrganizations);
 
 router.post("/profile/:id",userController.updateProfile);
+
+router.get("/branch/user",checkForAuth,userController.getUserByEmail);
+router.post("/modified/user",checkForAuth,checkForStaff,userController.modifieUserToOrg);
 
 // for admin
 router.get('/db/clean',checkForAuth,userController.cleanup);
