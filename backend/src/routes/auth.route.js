@@ -210,7 +210,11 @@ async function getValidAccessToken(userId) {
       { accessToken: newTokens.access_token }
     );
 
-    await RedisClient.call("JSON.SET", `User:FullData:${userId}`, "$.accessToken", newTokens.access_token);
+    const pipeline = RedisClient.pipeline();
+
+    pipeline.call("JSON.SET", `User:FullData:${user._id}`, "$.accessToken", newTokens.access_token);
+
+    await pipeline.exec();
 
     return { accessToken: newTokens.access_token, token: createTokenForUser(user) };
   }
@@ -242,7 +246,11 @@ async function getValidAccessTokenForUserObj(user) {
       { accessToken: newTokens.access_token }
     );
 
-    await RedisClient.call("JSON.SET", `User:FullData:${user._id}`, "$.accessToken", newTokens.access_token);
+    const pipeline = RedisClient.pipeline();
+
+    pipeline.call("JSON.SET", `User:FullData:${user._id}`, "$.accessToken", newTokens.access_token);
+
+    await pipeline.exec();
 
     return { accessToken: newTokens.access_token, token: createTokenForUser(user._id) };
   }

@@ -570,11 +570,13 @@ const resumeCleanupJob = asyncHandler(async (req, res) => {
     }
 });
 
-const getuserByBranch = asyncHandler(async (req, res) => {
+const getuserBySem = asyncHandler(async (req, res) => {
 
     const branch = req?.user.email.reverse().substring(10, 12).reverse();
 
-    if (!branch) {
+    const sem = parseInt(req.body.sem || "0");
+
+    if (!branch || sem > 8 || sem < 1) {
         throw new ApiError(UserError.INVALID_CREDENTIALS);
     }
 
@@ -586,8 +588,10 @@ const getuserByBranch = asyncHandler(async (req, res) => {
 
     const users = await cacheData.GetUserDataById("$", ...userIds);
 
+    const SemUser = users.map(user => user.sem == sem);
+
     return res.status(UserSuccess.USER_FOUND.statusCode)
-        .json(new ApiResponse(UserSuccess.USER_FOUND, users));
+        .json(new ApiResponse(UserSuccess.USER_FOUND, SemUser));
 });
 
 const getUserByEmail = asyncHandler(async (req, res) => {
@@ -598,11 +602,15 @@ const getUserByEmail = asyncHandler(async (req, res) => {
         throw new ApiError(UserError.INVALID_CREDENTIALS);
     }
 
-    const user = await cacheData.GetUserDataFromEmail("$", email + "@ddu.ac.in");
+    // const user = await cacheData.GetUserDataFromEmail("$", email + "@ddu.ac.in");
+    const user = await User.findOne({email:email+"@ddu.ac.in"}).lean();
 
-    if (user.length === 0) {
+    console.log(user);
+
+    if (!user) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
+
     // console.log(user);
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, user));
@@ -627,17 +635,20 @@ const modifieUserToOrg = asyncHandler(async (req, res) => {
         throw new ApiError(UserError.USER_ALREADY_ORG);
     }
     console.log(user[0]._id);
-     await RedisClient.call("JSON.SET", `User:FullData:${user[0]._id}`, "$", JSON.stringify(user[0]));
-    console.log("before promise");
-     await RedisClient.hset(`User:Email:${user[0].email}`, {
+
+    const a =  await RedisClient.call("JSON.SET", `User:FullData:${user[0]._id}`, "$", JSON.stringify(user[0]));
+    console.log("before promise",a);
+
+    await RedisClient.hset(`User:Email:${user[0].email}`, {
         role: 'org',
         id: user[0]._id
     });
+
     console.log("before promise");
     await User.updateOne(
         { _id: new mongoose.Types.ObjectId(user[0]._id) },
         { $set: { role: "org" } }
-    );
+    );    
 
     // await Promise([a, b, c]);
     console.log("after promise");
@@ -668,7 +679,7 @@ module.exports = {
     getOrganizationsByBranch,
     getAllOrganizations,
 
-    getuserByBranch,
+    getuserBySem,
     getUserByEmail,
     modifieUserToOrg
 };
