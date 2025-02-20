@@ -14,8 +14,8 @@ router.get("/event/:id/users",checkForAuth,eventController.getUserInEvent);
 router.get("/org/:orgId",checkForAuth,checkForOrg,eventController.getAllEventCreateByOrg);
 router.post("/event/:id/check",checkForAuth,checkForOrg,eventController.validateAndSendHODEmails);
 
-router.get("/staff/events",checkForAuth,checkForStaff,eventController.findAllEvent);
-router.get("/admin/events",checkForAuth,checkForAdmin,eventController.findAllEvent);
+router.get("/staff/events",checkForAuth,checkForStaff,eventController.cacheFindAllEvent);
+router.get("/admin/events",checkForAuth,checkForAdmin,eventController.cacheFindAllEvent);
 
 router.post("/event/groups/report",checkForAuth,checkForOrg,eventController.generateGroupReportCSV);
 // router.post(
