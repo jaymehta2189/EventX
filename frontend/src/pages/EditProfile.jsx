@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation,useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
 
 function EditProfile() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const userId = searchParams.get('id');
-
+  // const location = useLocation();
+   const { id } = useParams()
+ 
   const [formData, setFormData] = useState({
     name: '',
-    role: '',
     gender: '',
     sem: '',
     rollno: '',
@@ -22,7 +20,8 @@ function EditProfile() {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/users/user/${userId}`);
+        const response = await axios.get(`http://localhost:4000/api/v1/users/user/${id}`);
+
         console.log(response.data);
         setFormData(prevData => ({
           ...prevData,
@@ -32,10 +31,10 @@ function EditProfile() {
         toast.error('Error fetching user data');
       }
     };
-    if (userId) {
+    if (id) {
       fetchUserName();
     }
-  }, [userId]);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -44,13 +43,14 @@ function EditProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:4000/api/v1/users/profile/${userId}`, formData);
+      const response = await axios.post(`http://localhost:4000/api/v1/users/profile/${id}`, formData);
      
-        const token = response.data.data;
-        console.log("update profile token", token);
-        localStorage.setItem('token', token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        toast.success('Login successful!');
+        // const token = response.data.data;
+        // console.log("update profile token", token);
+        // localStorage.setItem('token', token);
+        // axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        toast.success('Updated successfully!');
+        console.log("update profile", response.data);
         navigate('/home');
       }
        catch (error) {
@@ -67,10 +67,10 @@ function EditProfile() {
             {/* Header Section */}
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-6">
               <h2 className="text-3xl font-bold text-white">
-                {userId ? 'Complete Your Profile' : 'Edit Profile'}
+                {id ? 'Complete Your Profile' : 'Edit Profile'}
               </h2>
               <p className="text-blue-100 mt-2">
-                {userId 
+                {id 
                   ? 'Welcome! Please provide some additional information to complete your profile.'
                   : 'Update your profile information below.'}
               </p>
@@ -96,7 +96,7 @@ function EditProfile() {
               </div>
 
               {/* Role Selection */}
-              <div>
+              {/* <div>
                 <label className="inline-flex items-center text-sm font-medium text-gray-700 mb-2">
                   <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -116,7 +116,7 @@ function EditProfile() {
                   <option value="admin">Admin</option>
                   <option value="hod">HOD</option>
                 </select>
-              </div>
+              </div> */}
 
               {/* Gender Selection */}
               <div>
@@ -205,7 +205,7 @@ function EditProfile() {
                   type="submit"
                   className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg hover:opacity-90 transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  {userId ? 'Complete Profile' : 'Update Profile'}
+                  {id ? 'Complete Profile' : 'Update Profile'}
                 </button>
               </div>
             </form>

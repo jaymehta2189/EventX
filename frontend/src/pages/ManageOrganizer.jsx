@@ -417,8 +417,10 @@ export default function ManageOrganizer() {
 
     setLoading(true);
     try {
-      const response = await axios.get(
-        `http://localhost:4000/api/v1/users/semester/${selectedSemester}`,
+      console.log("Filtering by semester:", selectedSemester);
+      const response = await axios.post(
+        `http://localhost:4000/api/v1/users/sem/user`,
+         { sem: selectedSemester},
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

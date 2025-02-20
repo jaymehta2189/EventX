@@ -22,7 +22,7 @@ router.get("/orgs",checkForAuth,userController.getAllOrganizations);
 
 router.post("/profile/:id",userController.updateProfile);
 
-router.get("/sem/user",checkForAuth,userController.getuserBySem);
+router.post("/sem/user",checkForAuth,userController.getuserBySem);
 router.post("/branch/user",checkForAuth,userController.getUserByEmail);
 router.post("/modified/user",checkForAuth,checkForStaff,userController.modifieUserToOrg);
 

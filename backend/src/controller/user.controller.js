@@ -305,7 +305,7 @@ const viewUserProfile = asyncHandler(async (req, res) => {
 
 const updateProfile = asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const { role, gender, sem, rollno, contactdetails } = req.body;
+    const { gender, sem, rollno, contactdetails } = req.body;
     try {
 
         const userObject = await cacheData.GetUserDataById("$._id", id);
@@ -316,7 +316,6 @@ const updateProfile = asyncHandler(async (req, res) => {
 
         const user = await User.findById({ _id: new mongoose.Types.ObjectId(id) });
 
-        user.role = role;
         user.gender = gender;
         user.sem = sem;
         user.rollno = rollno;
@@ -330,12 +329,10 @@ const updateProfile = asyncHandler(async (req, res) => {
         console.log("after update profile");
         console.log(user);
 
-        const token = createTokenForUser(user);
-
+        // const token = createTokenForUser(user);
         return res
-            .status(UserSuccess.LOG_IN.statusCode)
-            .cookie("token", token, { path: "/" })
-            .json(new ApiResponse(UserSuccess.LOG_IN, token));
+            .status(UserSuccess.PROFILE_UPDATED.statusCode)
+            .json(new ApiResponse(UserSuccess.PROFILE_UPDATED));
     } catch (error) {
         console.log(error.message);
         throw new ApiError(UserError.PROFILE_UPDATE_FAILED);
@@ -571,25 +568,25 @@ const resumeCleanupJob = asyncHandler(async (req, res) => {
 });
 
 const getuserBySem = asyncHandler(async (req, res) => {
-
-    const branch = req?.user.email.reverse().substring(10, 12).reverse();
-
+    console.log(req?.user.email);
+    const branch = req?.user.email.split('').reverse().join('').substring(10, 12).split('').reverse().join('');
+    console.log(branch);
     const sem = parseInt(req.body.sem || "0");
-
+    console.log(sem);
     if (!branch || sem > 8 || sem < 1) {
         throw new ApiError(UserError.INVALID_CREDENTIALS);
     }
 
     const userIds = await RedisClient.smembers(`User:Branch:${branch}`);
-
+    console.log(userIds);
     if (userIds.length === 0) {
         throw new ApiError(UserError.USER_NOT_FOUND);
     }
 
     const users = await cacheData.GetUserDataById("$", ...userIds);
-
-    const SemUser = users.map(user => user.sem == sem);
-
+    console.log(users);
+    const SemUser = users.filter(user => user.sem == sem);
+    console.log(SemUser);
     return res.status(UserSuccess.USER_FOUND.statusCode)
         .json(new ApiResponse(UserSuccess.USER_FOUND, SemUser));
 });
