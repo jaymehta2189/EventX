@@ -11,21 +11,30 @@ const {socketConfig} = require('./service/configWebSocket.js');
 const app = express();
 const server = http.createServer(app);
 
+const rateLimit = require("./middleware/rateLimit.js");
+
 socketConfig(server);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// app.use(express.static(path.resolve("../public")));
 app.use(express.static(path.resolve(__dirname, '../public')));
-// app.use(express.static(path.join(__dirname,"../public/images")));
-
-
 app.use(cookieParser());
 app.use(cors({
     origin:"http://localhost:5173",
     credentials:true
 }));
-app.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: true }));
+
+app.use(
+session(
+    {
+        secret: 'EM5VLEfiSTAxjKh5LYfHk3RRKqA8jvzTof8j6FZKmXha3QymTLsYW9RqCcxgOlPl', 
+        resave: false, 
+        saveUninitialized: true 
+    }
+));
+
+app.use(rateLimit);
+
 
 // =======================
 const UserRouter = require("./routes/user.route.js");
@@ -53,7 +62,6 @@ RedisClient.on('ready', async() => {
             ]
         );
     }
-    
 });
 
 RedisClient.on('error', (error) => {

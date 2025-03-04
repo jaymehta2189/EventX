@@ -253,7 +253,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         if (eventData.joinGroup + 1 == eventData.groupLimit) {
             eventData.allowBranch.forEach(branch => {
-                broadcastToRoom(branch, { id: event, operation: "remove" }, "remove");
+                broadcastToRoom(branch, { id: event, operation: "remove" }, "remove-event");
             });
         }
 
@@ -357,7 +357,7 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        broadcastToRoom(`group:${group._id}`, user);
+        broadcastToRoom(`group:${group._id}`, user,"user-join");
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, existGroup));
@@ -409,11 +409,18 @@ async function SetCalenders(eventId, users) {
 const VerificationOfGroup = asyncHandler(async (req, res) => {
     const { group, event } = req.body;
     try {
-        const groupData = await cacheData.GetGroupDataById("$.isVerified", group);
-        const eventData = await cacheData.GetEventDataById("$.girlMinLimit", event);
+        const groupDatas = await cacheData.GetGroupDataById("$.isVerified", group);
+        const eventDatas = await cacheData.GetEventDataById("$.girlMinLimit", event);
 
-        if (groupData.length === 0 || eventData.length === 0) {
+        if (groupDatas.length === 0 || eventDatas.length === 0) {
             throw new ApiError(GroupError.INVALID_GROUP);
+        }
+
+        const groupData = groupDatas[0] , eventData = eventDatas[0];
+
+        if(groupData){
+            return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
+            .json(new ApiResponse(GroupSuccess.GROUP_VERIFIED));
         }
 
         const usersId = await cacheData.GetUserIdsByGroupId(group);
@@ -444,11 +451,11 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
 
         await SetCalenders(event, users);
 
-        const groupsDetail = await Group.findByIdAndUpdate(
-            new mongoose.Types.ObjectId(group),
+        const groupsDetail = await Group.findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(group) },
             { $set: { isVerified: true } },
             { new: true }
-        );
+        );        
 
         await RedisClient.call("JSON.SET", `Group:FullData:${group}`, "$", JSON.stringify(groupsDetail));
 

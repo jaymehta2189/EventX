@@ -205,16 +205,13 @@ async function getValidAccessToken(userId) {
   if (newTokens) {
     user.accessToken = newTokens.access_token;
 
-    await User.findByIdAndUpdate(
+    const userUpdated = await User.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(userId) },
-      { accessToken: newTokens.access_token }
+      { $set : {accessToken: newTokens.access_token} },
+      { new : true}
     );
 
-    const pipeline = RedisClient.pipeline();
-
-    pipeline.call("JSON.SET", `User:FullData:${user._id}`, "$.accessToken", newTokens.access_token);
-
-    await pipeline.exec();
+    await cacheData.cacheUser(userUpdated);
 
     return { accessToken: newTokens.access_token, token: createTokenForUser(user) };
   }
@@ -241,16 +238,13 @@ async function getValidAccessTokenForUserObj(user) {
   if (newTokens) {
     user.accessToken = newTokens.access_token;
 
-    await User.findByIdAndUpdate(
+    const userUpdated = await User.findOneAndUpdate(
       { _id: new mongoose.Types.ObjectId(user._id) },
-      { accessToken: newTokens.access_token }
+      { accessToken: newTokens.access_token },
+      { new : true}
     );
 
-    const pipeline = RedisClient.pipeline();
-
-    pipeline.call("JSON.SET", `User:FullData:${user._id}`, "$.accessToken", newTokens.access_token);
-
-    await pipeline.exec();
+    await cacheData.cacheUser(userUpdated);
 
     return { accessToken: newTokens.access_token, token: createTokenForUser(user._id) };
   }
