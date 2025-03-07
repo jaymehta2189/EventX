@@ -529,7 +529,7 @@ async function getGroupDetails(eventId, userId) {
 
     let isReadyForVerification = "verified";
 
-    if (group.isVerified) {
+    if (!group.isVerified) {
         isReadyForVerification = await VerifiedGroup(eventId, users);
     }
 
@@ -576,6 +576,25 @@ async function SetCalender(eventId, accessToken) {
     }
 }
 
+const assignScore = asyncHandler(async(req,res)=>{
+    const  { groupScore } = req.body;
+
+    const groupIds = Object.keys(groupScore);
+    let updateGroup = [];
+    
+    for(const Id of groupIds){
+        const group = await cacheData.GetGroupDataById("$",Id);
+        if(group.length != 0){
+            group[0].score = groupScore[Id];
+            updateGroup.push(cacheData.cacheGroup(group[0]));
+        }
+    }
+
+    await Promise.all(updateGroup);
+    
+    return res.status(GroupSuccess.SCORE_ASSIGN.statusCode).json(GroupSuccess.SCORE_ASSIGN);
+});  
+
 module.exports = {
     // createGroup,
     // pending roll back cache data in create group and join group
@@ -586,5 +605,6 @@ module.exports = {
     VerificationOfGroup,
 
     // change frontendurl
-    scanGroupQRCode
+    scanGroupQRCode,
+    assignScore
 };

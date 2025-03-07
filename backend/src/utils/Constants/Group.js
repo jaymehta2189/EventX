@@ -51,4 +51,5 @@ exports.GroupSuccess = Object.freeze({
     GROUP_SIZE_VALIDATED: { customCode: 2253, message: "Group size is validated.", statusCode: 200 },
     QR_SCAN: { customCode: 2254, message: "Qr Scan By Event's Creator.", statusCode: 200 },
     GROUP_JOIN_SUCCESS: { customCode: 2255, message: "Group member join event successfully.", statusCode: 200 },
+    SCORE_ASSIGN : {customCode:2256 ,message:"Successfully assign score to group.",statusCode:200}
 });

@@ -257,7 +257,7 @@ const createEvent = asyncHandler(async (req, res) => {
     let avatarUrl = avatar ? avatar : "https://res.cloudinary.com/dlswoqzhe/image/upload/v1736367840/Collaborative-Coding.-A-developer-team-working-together.-min-896x504_mnw9np.webp";
 
     try {
-        const timeLimit = new Date(new Date(endDate).getTime() + 2 * 24 * 60 * 60 * 1000);
+        const timeLimit = new Date(new Date(endDate).getTime() + 30 * 24 * 60 * 60 * 1000);
 
         const event = await Event.create({
             name,
@@ -521,50 +521,46 @@ async function deleteCSVFiles(csvFilePaths) {
     }
 }
 
+async function sendEmailsForBranch(branch, branchDetails, csvFilePaths) {
+    const filePath = csvFilePaths[branch];
+    if (!filePath) {
+        console.warn(`No CSV file found for branch ${branch}. Email will not be sent.`);
+        return;
+    }
+
+    for (const email of branchDetails.staffs) {
+        const mailOptions = {
+            from: 'EventX',
+            to: email,
+            subject: `Event Report: ${branchDetails.EventName}`, // ✅ Ensure event details are inside branchDetails
+            text: `Please find attached the report for the event "${branchDetails.EventName}" held from ${branchDetails.StartDate} to ${branchDetails.EndDate}.`,
+            attachments: [{ filename: `${branch}_event_data.csv`, path: filePath }]
+        };
+
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log(`Email sent to ${email}`);
+        } catch (error) {
+            console.error(`Error sending email to ${email}:`, error);
+        }
+    }
+}
+
+
 async function sendEmailsToHODs(branchData) {
     try {
         const csvFilePaths = await generateCSVFilesForBranches(branchData);
 
-        const emailPromises = Object.keys(branchData).map(async (branch) => {
-            const branchDetails = branchData[branch];
-            const filePath = csvFilePaths[branch];
+        const emailPromises = [];
+        for (const branch of Object.keys(branchData)) {
+            emailPromises.push(sendEmailsForBranch(branch, branchData[branch], csvFilePaths));
+        }
 
-            if (filePath) {
-
-                for (const email of branchDetails.staffs) {
-                    const mailOptions = {
-                        from: 'EventX',
-                        to: email,
-                        subject: `Event Report: ${branchData.EventName}`,
-                        text: `Please find attached the report for the event "${branchData.EventName}" held from ${branchData.StartDate} to ${branchData.EndDate}.`,
-                        attachments: [
-                            {
-                                filename: `${branch}_event_data.csv`,
-                                path: filePath
-                            }
-                        ]
-                    };
-
-                    try {
-                        const info = await transporter.sendMail(mailOptions);
-                        console.log(`Email sent to ${branchDetails.staffs}`);
-                    } catch (error) {
-                        console.error(`Error sending email to ${branchDetails.staffs}:`, error);
-                    }
-
-                }
-
-            } else {
-                console.warn(`No CSV file found for branch ${branch}. Email will not be sent.`);
-            }
-        });
-
-        await Promise.all(emailPromises); // Wait for all emails to be sent
+        await Promise.all(emailPromises); 
         console.log('All emails processed.');
 
-        await deleteCSVFiles(csvFilePaths); // Safely delete files after emails are sent
+        await deleteCSVFiles(csvFilePaths);
         console.log('CSV files deleted after emails sent.');
-
     } catch (error) {
         console.error('Error in sending emails:', error);
     }
@@ -608,19 +604,21 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
         scannedUserIds.push(...userIds);
     }
 
-    const users = await cacheData.GetUserDataById('$', ...scannedUserIds);
+    const users = await cacheData.GetUserDataById('$', ...scannedUserIds);  
 
     if (users.length === 0) {
         throw new ApiError(EventError.NO_GROUPS_FOUND);
     }
 
+    const branches = [...new Set(users.map(user => user.branch))];
+
+    const BranchStaff = await findStaff(branches);
+
     const groupedUsersByBranch = users.reduce((result, user) => {
         const branchId = user.branch;
         if (!result[branchId]) {
-            // write this later
-            const staffEmails = findStaff(branchId);
             result[branchId] = {
-                staffs: staffEmails,
+                staffs: BranchStaff[branchId],
                 users: []
             };
         }
@@ -647,6 +645,20 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
         .json(new ApiResponse(EventSuccess.SEND_MAIL));
 });
 
+async function findStaff(branches) { 
+    // const authority = await ;
+    let BranchStaff = {};
+
+    for(const branch of branches){
+        const ids = await RedisClient.smembers(`Authority:Branch:${branch}`);
+
+        BranchStaff[branch] = await cacheData.GetAuthorityDataById("$.email",...ids);;
+    }
+
+    return BranchStaff;
+}
+
+
 const getAllEventCreateByOrg = asyncHandler(async (req, res) => {
     try {
         const orgId = req.params.orgId;
@@ -667,7 +679,7 @@ const getGroupInEvent = asyncHandler(async (req, res) => {
 
         const groupId = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
 
-        const groups = await cacheData.GetGroupDataById('$', ...groupId);
+        const groups = (await cacheData.GetGroupDataById('$', ...groupId)).filter(group => group.isVerified);
 
         return res.status(EventSuccess.EVENT_FOUND.statusCode)
             .json(new ApiResponse(EventSuccess.EVENT_FOUND, groups));

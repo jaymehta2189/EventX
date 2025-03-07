@@ -500,6 +500,8 @@ async function cacheAuthority(...authority) {
             role: authority.role,
             id: authority._id
         });
+
+        pipeline.sadd(`Authority:Branch:${authority.branch}`,authority._id);
     });
 
     await pipeline.exec();
