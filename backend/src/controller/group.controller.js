@@ -408,6 +408,7 @@ async function SetCalenders(eventId, users) {
 
 const VerificationOfGroup = asyncHandler(async (req, res) => {
     const { group, event } = req.body;
+    console.log(group, event);
     try {
         const groupData = await cacheData.GetGroupDataById("$.isVerified", group);
         const eventData = await cacheData.GetEventDataById("$.girlMinLimit", event);
@@ -522,7 +523,7 @@ async function getGroupDetails(eventId, userId) {
 
     let isReadyForVerification = "verified";
 
-    if (group.isVerified) {
+    if (!group.isVerified) {
         isReadyForVerification = await VerifiedGroup(eventId, users);
     }
 
@@ -568,6 +569,28 @@ async function SetCalender(eventId, accessToken) {
         console.error("Error creating event in Google Calendar:", error);
     }
 }
+const assignScore = asyncHandler(async(req,res)=>{
+    console.log(req.body);
+    const  { groupScore } = req.body;
+
+    const groupIds = Object.keys(groupScore);
+    console.log(groupIds);
+    let updateGroup = [];
+    
+    for(const Id of groupIds){
+        const group = await cacheData.GetGroupDataById("$",Id);
+        if(group.length != 0){
+            console.log(groupScore[Id]);
+            group[0].score = groupScore[Id];
+            console.log(group[0]);
+            updateGroup.push(cacheData.cacheGroup(group[0]));
+        }
+    }
+
+    await Promise.all(updateGroup);
+    
+    return res.status(GroupSuccess.SCORE_ASSIGN.statusCode).json(GroupSuccess.SCORE_ASSIGN);
+});
 
 module.exports = {
     // createGroup,
@@ -577,7 +600,7 @@ module.exports = {
     getGroupDetails,
     getUserInGroup,
     VerificationOfGroup,
-
+    assignScore,
     // change frontendurl
     scanGroupQRCode
 };

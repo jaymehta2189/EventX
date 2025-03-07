@@ -96,10 +96,9 @@ export default function CreateEventModal({ isOpen, onClose }) {
       console.log(formData.startDate, formData.endDate);
       setLoading(true);
       const response = await axios.post('http://localhost:4000/api/v1/events/event/location', {
-        startDate: formData.startDate,
-        endDate: formData.endDate
-      });
-      const normalizedLocations = response.data.data.map(location => ({
+        startDate: new Date(formData.startDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
+        endDate: new Date(formData.endDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
+      });    const normalizedLocations = response.data.data.map(location => ({
         id: location,
         name: location
       }));
@@ -349,6 +348,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
               name="pricePool"
               value={formData.pricePool}
               onChange={handleInputChange}
+              onWheel={(e) => e.target.blur()}
               placeholder="Prize Pool Amount"
               className={inputClasses}
             />
@@ -362,6 +362,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
                 name="groupLimit"
                 value={formData.groupLimit}
                 onChange={handleInputChange}
+                onWheel={(e) => e.target.blur()}
                 placeholder="Max Groups"
                 className={inputClasses}
               />
@@ -374,6 +375,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
                 name="userLimit"
                 value={formData.userLimit}
                 onChange={handleInputChange}
+                onWheel={(e) => e.target.blur()}
                 placeholder="Users per Group"
                 className={inputClasses}
               />
@@ -387,6 +389,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
               name="girlMinLimit"
               value={formData.girlMinLimit}
               onChange={handleInputChange}
+              onWheel={(e) => e.target.blur()}
               placeholder="Minimum Girls Required"
               className={inputClasses}
             />
