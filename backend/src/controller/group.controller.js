@@ -253,7 +253,7 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         if (eventData.joinGroup + 1 == eventData.groupLimit) {
             eventData.allowBranch.forEach(branch => {
-                broadcastToRoom(branch, { id: event, operation: "remove" }, "remove");
+                broadcastToRoom(branch, { id: event, operation: "remove" }, "remove-event");
             });
         }
 
@@ -357,7 +357,7 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        broadcastToRoom(`group:${group._id}`, user);
+        broadcastToRoom(`group:${group._id}`, user,"user-join");
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, existGroup));
@@ -408,13 +408,19 @@ async function SetCalenders(eventId, users) {
 
 const VerificationOfGroup = asyncHandler(async (req, res) => {
     const { group, event } = req.body;
-    console.log(group, event);
     try {
-        const groupData = await cacheData.GetGroupDataById("$.isVerified", group);
-        const eventData = await cacheData.GetEventDataById("$.girlMinLimit", event);
+        const groupDatas = await cacheData.GetGroupDataById("$.isVerified", group);
+        const eventDatas = await cacheData.GetEventDataById("$.girlMinLimit", event);
 
-        if (groupData.length === 0 || eventData.length === 0) {
+        if (groupDatas.length === 0 || eventDatas.length === 0) {
             throw new ApiError(GroupError.INVALID_GROUP);
+        }
+
+        const groupData = groupDatas[0] , eventData = eventDatas[0];
+
+        if(groupData){
+            return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
+            .json(new ApiResponse(GroupSuccess.GROUP_VERIFIED));
         }
 
         const usersId = await cacheData.GetUserIdsByGroupId(group);
@@ -445,11 +451,11 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
 
         await SetCalenders(event, users);
 
-        const groupsDetail = await Group.findByIdAndUpdate(
-            new mongoose.Types.ObjectId(group),
+        const groupsDetail = await Group.findOneAndUpdate(
+            { _id: new mongoose.Types.ObjectId(group) },
             { $set: { isVerified: true } },
             { new: true }
-        );
+        );        
 
         await RedisClient.call("JSON.SET", `Group:FullData:${group}`, "$", JSON.stringify(groupsDetail));
 
@@ -569,20 +575,17 @@ async function SetCalender(eventId, accessToken) {
         console.error("Error creating event in Google Calendar:", error);
     }
 }
+
 const assignScore = asyncHandler(async(req,res)=>{
-    console.log(req.body);
     const  { groupScore } = req.body;
 
     const groupIds = Object.keys(groupScore);
-    console.log(groupIds);
     let updateGroup = [];
     
     for(const Id of groupIds){
         const group = await cacheData.GetGroupDataById("$",Id);
         if(group.length != 0){
-            console.log(groupScore[Id]);
             group[0].score = groupScore[Id];
-            console.log(group[0]);
             updateGroup.push(cacheData.cacheGroup(group[0]));
         }
     }
@@ -590,7 +593,7 @@ const assignScore = asyncHandler(async(req,res)=>{
     await Promise.all(updateGroup);
     
     return res.status(GroupSuccess.SCORE_ASSIGN.statusCode).json(GroupSuccess.SCORE_ASSIGN);
-});
+});  
 
 module.exports = {
     // createGroup,
@@ -600,7 +603,8 @@ module.exports = {
     getGroupDetails,
     getUserInGroup,
     VerificationOfGroup,
-    assignScore,
+
     // change frontendurl
-    scanGroupQRCode
+    scanGroupQRCode,
+    assignScore
 };

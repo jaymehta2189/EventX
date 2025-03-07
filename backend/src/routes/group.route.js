@@ -10,7 +10,9 @@ const checkForCleander = require("../middleware/auth.js");
 router.post("/group",checkForAuth , checkForCleander , groupController.LeaderCreateGroup);
 router.post("/group/join",checkForAuth , checkForCleander , groupController.UserJoinGroup);
 router.get("/group/:id/users",checkForAuth, groupController.getUserInGroup);
+
 router.post("/score",checkForAuth,checkForOrg,groupController.assignScore);
+
 router.get("/group/qr/:groupId",checkForAuth,checkForOrg,groupController.scanGroupQRCode);
 router.post("/verifyGroup",checkForAuth,groupController.VerificationOfGroup);
 

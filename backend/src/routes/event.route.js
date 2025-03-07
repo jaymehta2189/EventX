@@ -18,14 +18,5 @@ router.get("/staff/events",checkForAuth,checkForStaff,eventController.cacheFindA
 router.get("/admin/events",checkForAuth,checkForAdmin,eventController.cacheFindAllEvent);
 
 router.post("/event/groups/report",checkForAuth,checkForOrg,eventController.generateGroupReportCSV);
-// router.post(
-//     "/event/groups/score",
-//     checkForAuth,
-//     checkForOrg,
-//     upload.single('csvFile'),
-//     checkCSVFile,
-//     eventController.processGroupReportCSV
-// );
 
-router.get("/event/:id/rank",checkForAuth,eventController.rankGroupsByEventScore);
 module.exports=router;
