@@ -97,6 +97,7 @@ export default function Dashboard() {
         },
         withCredentials: true, // Ensures cookies are sent
       });
+      console.log("api called ");
       setSelectedGroupMembers(response.data.data)
     } catch (error) {
       console.error("Error fetching group members:", error)
