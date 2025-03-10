@@ -6,7 +6,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 const moment = require("moment-timezone");
 const { EventError, EventSuccess } = require("../utils/Constants/Event");
-
+const {mailSender}=require("../service/nodemailer");
 const { getGroupDetails } = require("./group.controller");
 const { RedisClient } = require("../service/configRedis");
 const cacheData = require("../service/cacheData");
@@ -19,9 +19,10 @@ const path = require('path');
 const { transporter } = require('nodemailer');
 const { uploadOnCloudinary } = require('../utils/cloudinary');
 const { isNumberObject } = require("util/types");
-const { eventNames } = require("process");
-const { error } = require("console");
+const { eventNames, send } = require("process");
+const { error, Console } = require("console");
 const { broadcastToRoom } = require("../service/configWebSocket");
+const { console } = require("inspector");
 
 function isundefine(variable) {
     return typeof variable === 'undefined';
@@ -773,6 +774,41 @@ const generateGroupReportCSV = asyncHandler(async (req, res) => {
     }
 });
 
+const sendReport = asyncHandler(async (req, res,next) => {
+    try {
+      console.log(" Step 5: Inside sendReport");
+      console.log("Request Body:", req.body);
+  
+      const { eventId } = req.body;
+    //   const pdf_file = req.file; 
+    //   console.log(" Uploaded File:", pdf_file);
+        
+    //   if (!pdf_file) {
+    //     console.error(" No file uploaded");
+    //     return res.status(400).json({ error: "No file uploaded" });
+    //   }
+      await mailSender(
+        "jaymehta249@gmail.com",
+        "Event Report",
+        "<p>Attached is the event report.</p>",
+    );
+      const eventDetails = await cacheData.GetEventDataById("$", eventId);
+      if (eventDetails.length === 0) {
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
+      }
+  
+      console.log(" Event Details:", eventDetails);
+      console.error("Debug: Reached end of sendReport before response");
+      next();
+      return res
+        .status(EventSuccess.EVENT_FOUND.statusCode)
+        .json(new ApiResponse(EventSuccess.EVENT_FOUND, eventDetails));
+    } catch (error) {
+      console.error(" Error in sending report:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+  
 module.exports = {
     // function
     findAllEventsByOrgId,
@@ -782,7 +818,7 @@ module.exports = {
     createEvent,
     findAllEvent,
     cacheFindAllEvent,
-
+    sendReport,
     viewEvent,
     cacheViewEvent,
     SameNameInCache,

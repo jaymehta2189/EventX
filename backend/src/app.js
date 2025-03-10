@@ -7,20 +7,20 @@ const ApiError = require("./utils/ApiError.js");
 const session = require('express-session');
 const { exit } = require("process");
 
-const {socketConfig} = require('./service/configWebSocket.js');
+// const {socketConfig} = require('./service/configWebSocket.js');
 const app = express();
 const server = http.createServer(app);
 
 const rateLimit = require("./middleware/rateLimit.js");
 
-socketConfig(server);
+// socketConfig(server);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.resolve(__dirname, '../public')));
 app.use(cookieParser());
 app.use(cors({
-    origin:"http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     credentials:true
 }));
 

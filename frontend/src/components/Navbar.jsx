@@ -197,7 +197,7 @@ function Navbar() {
           className="text-white font-bold text-xl cursor-pointer" 
           onClick={() => navigate('/')}
         >
-          EventHub
+          EventX
         </div>
         <div className="flex items-center space-x-6">
           <button 

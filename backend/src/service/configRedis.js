@@ -1,9 +1,11 @@
 const Redis = require('ioredis');
+require('dotenv').config();
+const RedisClient = new Redis(process.env.REDIS_URL, {
+    tls: {} // Enable TLS
+  });
 
-const RedisClient = new Redis();
-
-const pubClient = new Redis();
-const subClient = pubClient.duplicate();
+// const pubClient = new Redis(process.env.REDIS_URL);
+// const subClient = pubClient.duplicate();
 
 RedisClient.ClearRedisSync = async ()=>{
     try {
@@ -23,4 +25,4 @@ RedisClient.ClearRedisAsync = async ()=>{
     }
 };
 
-module.exports = {RedisClient,pubClient,subClient};
+module.exports = {RedisClient};//,pubClient,subClient};

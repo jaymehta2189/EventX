@@ -586,11 +586,22 @@ const assignScore = asyncHandler(async(req,res)=>{
         const group = await cacheData.GetGroupDataById("$",Id);
         if(group.length != 0){
             group[0].score = groupScore[Id];
-            updateGroup.push(cacheData.cacheGroup(group[0]));
+            // updateGroup.push(cacheData.cacheGroup(group[0]));
+            await cacheData.cacheGroup(group[0]);
+
+            updateGroup.push({
+                updateOne:{
+                    filter:{_id:Id},
+                    update:{$set:{score:groupScore[Id]}}
+                }
+            })
         }
     }
+    if(updateGroup.length>0){
+        await Group.bulkWrite(updateGroup);
+    }
 
-    await Promise.all(updateGroup);
+    // await Promise.all(updateGroup);
     
     return res.status(GroupSuccess.SCORE_ASSIGN.statusCode).json(GroupSuccess.SCORE_ASSIGN);
 });  

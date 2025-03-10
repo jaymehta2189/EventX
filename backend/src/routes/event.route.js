@@ -18,5 +18,7 @@ router.get("/staff/events",checkForAuth,checkForStaff,eventController.cacheFindA
 router.get("/admin/events",checkForAuth,checkForAdmin,eventController.cacheFindAllEvent);
 
 router.post("/event/groups/report",checkForAuth,checkForOrg,eventController.generateGroupReportCSV);
+  
+  
 
 module.exports=router;

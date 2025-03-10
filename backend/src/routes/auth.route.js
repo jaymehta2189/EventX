@@ -106,7 +106,7 @@ router.get('/google/callback', async (req, res) => {
       return res
         .status(UserSuccess.LOG_IN.statusCode)
         .cookie('token', token, { path: '/' })
-        .redirect(`http://localhost:5173/home`);
+        .redirect(`${process.env.FRONTEND_URL}/home`);
 
     }
 
@@ -139,7 +139,7 @@ router.get('/google/callback', async (req, res) => {
     return res
       .status(UserSuccess.LOG_IN.statusCode)
       .cookie('token', token, { path: '/' })
-      .redirect(`http://localhost:5173/home`);
+      .redirect(`${process.env.FRONTEND_URL}/home`);
   } catch (error) {
     console.error('Error during Google OAuth:', error);
     res.status(500).send('OAuth error');
