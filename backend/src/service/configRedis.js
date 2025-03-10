@@ -1,9 +1,12 @@
 const Redis = require('ioredis');
 require('dotenv').config();
-const RedisClient = new Redis(process.env.REDIS_URL, {
-    tls: {} // Enable TLS
-  });
-
+const RedisClient = new Redis({
+  host: process.env.REDIS_URL,
+  port: 6379, 
+  tls: {} ,
+  connectTimeout: 10000
+  // Required for secure connection
+});
 // const pubClient = new Redis(process.env.REDIS_URL);
 // const subClient = pubClient.duplicate();
 
