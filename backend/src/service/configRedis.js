@@ -1,6 +1,7 @@
 const Redis = require('ioredis');
 require('dotenv').config();
-const RedisClient = new Redis(process.env.REDIS_URL,{tls:{}});
+
+const RedisClient = new Redis(process.env.REDIS_URL);
 // const pubClient = new Redis(process.env.REDIS_URL);
 // const subClient = pubClient.duplicate();
 

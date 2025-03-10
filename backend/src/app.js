@@ -62,6 +62,8 @@ RedisClient.on('ready', async() => {
             ]
         );
     }
+
+    console.log("Redis is ready.");
 });
 
 RedisClient.on('error', (error) => {
