@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function Home() {
   const [events, setEvents] = useState([]);

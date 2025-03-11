@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function SignUp() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ function SignUp() {
     e.preventDefault();
     try {
       console.log(formData.email);
-      await axios.post('http://localhost:4000/api/v1/users/sendOTP', {
+      await axios.post(`${API_BASE_URL}/api/v1/users/sendOTP`, {
         email: formData.email
       });
       setOtpSent(true);
@@ -35,7 +36,7 @@ function SignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:4000/api/v1/users/signup', formData);
+      await axios.post(`${API_BASE_URL}/api/v1/users/signup`, formData);
       toast.success('Signup successful! Please login.');
       navigate('/signin');
     } catch (error) {

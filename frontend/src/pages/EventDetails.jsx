@@ -454,6 +454,7 @@ import {
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 // import { set } from '../../../backend/src/routes/user.route';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function EventDetails() {
   const { id } = useParams();
@@ -471,7 +472,7 @@ function EventDetails() {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${id}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${id}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
           },
@@ -506,7 +507,7 @@ function EventDetails() {
 
     try {
       setJoiningTeam(true);
-      const response = await axios.post(`http://localhost:4000/api/v1/groups/group/join`, {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/groups/group/join`, {
         code: teamCode,
         event: id
       });
@@ -527,7 +528,7 @@ function EventDetails() {
 
     try {
       setCreatingTeam(true);
-      const response = await axios.post(`http://localhost:4000/api/v1/groups/group`, {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/groups/group`, {
         name: newTeamName,
         event: id
       });
@@ -548,7 +549,7 @@ function EventDetails() {
 
     try {
       setVerifyingTeam(true);
-      const response = await axios.post(`http://localhost:4000/api/v1/groups/verifyGroup`, {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/groups/verifyGroup`, {
         group: existingGroup._id,
         event: id
       }, {

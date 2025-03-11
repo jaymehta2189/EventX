@@ -1,5 +1,7 @@
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 function About() {
   return (
     <div className="min-h-screen bg-gray-100">

@@ -370,6 +370,7 @@ import {
   Filter,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function ManageOrganizer() {
   const [searchId, setSearchId] = useState("");
@@ -388,7 +389,7 @@ export default function ManageOrganizer() {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://localhost:4000/api/v1/users/branch/user`,
+        `${API_BASE_URL}/api/v1/users/branch/user`,
         { email: searchId },
         {
           headers: {
@@ -419,7 +420,7 @@ export default function ManageOrganizer() {
     try {
       console.log("Filtering by semester:", selectedSemester);
       const response = await axios.post(
-        `http://localhost:4000/api/v1/users/sem/user`,
+        `${API_BASE_URL}/api/v1/users/sem/user`,
          { sem: selectedSemester},
         {
           headers: {
@@ -440,7 +441,7 @@ export default function ManageOrganizer() {
   const handlePromoteToOrganizer = async (userId) => {
     try {
       await axios.post(
-        `http://localhost:4000/api/v1/users/modified/user`,
+        `${API_BASE_URL}/api/v1/users/modified/user`,
         {
           userId: userId,
         },

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin } from 'lucide-react';
 import { toast } from 'react-toastify';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const ScheduleStep = ({ formData, setFormData }) => {
   const [locations, setLocations] = useState([]);
@@ -11,7 +12,7 @@ const ScheduleStep = ({ formData, setFormData }) => {
       if (formData.startDate && formData.endDate) {
         setIsLoading(true);
         try {
-          const response = await fetch('http://localhost:4000/api/v1/events/freelocation', {
+          const response = await fetch(`${API_BASE_URL}/api/v1/events/freelocation`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

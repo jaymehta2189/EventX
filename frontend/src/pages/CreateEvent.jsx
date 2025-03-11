@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import CreateEventModal from "../components/CreateEventModal"
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function CreateEvent() {
   const navigate = useNavigate()

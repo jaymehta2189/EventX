@@ -1,4 +1,5 @@
 
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,7 +96,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
     try {
       console.log(formData.startDate, formData.endDate);
       setLoading(true);
-      const response = await axios.post('http://localhost:4000/api/v1/events/event/location', {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/events/event/location`, {
         startDate: new Date(formData.startDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }),
         endDate: new Date(formData.endDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })
       });    const normalizedLocations = response.data.data.map(location => ({
@@ -144,7 +145,7 @@ export default function CreateEventModal({ isOpen, onClose }) {
 
         // Make the request with proper headers
         const response = await axios.post(
-            'http://localhost:4000/api/v1/events/event', 
+            `${API_BASE_URL}/api/v1/events/event`, 
             formDataToSend,
             {
                 headers: {

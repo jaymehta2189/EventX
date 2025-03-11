@@ -23,6 +23,7 @@ import {
   UserPlus,
 } from "lucide-react"
 import Navbar from "../components/Navbar"
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export default function Dashboard() {
   const { id } = useParams()
@@ -40,7 +41,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const userResponse = await axios.get(`http://localhost:4000/api/v1/users/user/${id}`, {
+        const userResponse = await axios.get(`${API_BASE_URL}/api/v1/users/user/${id}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
           },
@@ -48,7 +49,7 @@ export default function Dashboard() {
         });
         setUserDetails(userResponse.data.data)
 
-        const eventsResponse = await axios.get(`http://localhost:4000/api/v1/users/user/${id}/groups`, {
+        const eventsResponse = await axios.get(`${API_BASE_URL}/api/v1/users/user/${id}/groups`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
           },
@@ -57,7 +58,7 @@ export default function Dashboard() {
         setEvents(eventsResponse.data.data)
 
         if (userResponse.data.data.role === "org") {
-          const createdEventsResponse = await axios.get(`http://localhost:4000/api/v1/events/org/${id}`, {
+          const createdEventsResponse = await axios.get(`${API_BASE_URL}/api/v1/events/org/${id}`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
             },
@@ -77,7 +78,7 @@ export default function Dashboard() {
 
   const fetchEventGroups = async (eventId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/v1/events/event/${eventId}/groups`, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${eventId}/groups`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
         },
@@ -91,7 +92,7 @@ export default function Dashboard() {
 
   const fetchGroupMembers = async (groupId) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/v1/groups/group/${groupId}/users`, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/groups/group/${groupId}/users`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
         },

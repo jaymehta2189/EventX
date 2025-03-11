@@ -149,6 +149,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from './AuthContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function Navbar() {
   const navigate = useNavigate();
@@ -172,7 +173,7 @@ function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:4000/api/v1/users/logout', null, {
+      await axios.post(`${API_BASE_URL}/api/v1/users/logout`, null, {
         headers: {
           Authorization: `Bearer ${authToken}`
         },

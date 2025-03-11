@@ -3,6 +3,7 @@ import { useNavigate, useLocation,useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function EditProfile() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ function EditProfile() {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/users/user/${id}`);
+        const response = await axios.get(`${API_BASE_URL}/api/v1/users/user/${id}`);
 
         console.log(response.data);
         setFormData(prevData => ({
@@ -43,7 +44,7 @@ function EditProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:4000/api/v1/users/profile/${id}`, formData);
+      const response = await axios.post(`${API_BASE_URL}/api/v1/users/profile/${id}`, formData);
      
         // const token = response.data.data;
         // console.log("update profile token", token);

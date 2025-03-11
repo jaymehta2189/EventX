@@ -87,6 +87,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { toast } from 'react-toastify';
 import { use } from 'react';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function SignIn() {
 
@@ -105,7 +106,7 @@ function SignIn() {
     e.preventDefault();
     setIsProcessing(true);
     try {
-      const response = await axios.post('http://localhost:4000/api/v1/users/signin', formData);
+      const response = await axios.post(`${API_BASE_URL}/api/v1/users/signin`, formData);
       const token = response.data.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -119,7 +120,7 @@ function SignIn() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = 'http://localhost:4000/api/v1/auth/google';
+    window.location.href = `${API_BASE_URL}/api/v1/auth/google`;
     // setIsProcessing(true);
   };
   

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { toast } from "react-toastify";
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const GroupsPage = () => {
   const { eventId } = useParams();
@@ -40,10 +41,11 @@ const GroupsPage = () => {
   const [groupScores, setGroupScores] = useState({});
   const [updatingScores, setUpdatingScores] = useState(false);
   const[sendingReport, setSendingReport] = useState(false);
+
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${eventId}`, {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${eventId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
           },
@@ -57,7 +59,7 @@ const GroupsPage = () => {
 
     const fetchEventGroups = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/event/${eventId}/groups`, {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${eventId}/groups`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
           },
@@ -66,7 +68,7 @@ const GroupsPage = () => {
         const groupsWithMembers = await Promise.all(
           response.data.data.map(async (group) => {
             const membersResponse = await axios.get(
-              `http://localhost:4000/api/v1/groups/group/${group._id}/users`,
+              `${API_BASE_URL}/api/v1/groups/group/${group._id}/users`,
               {
                 headers: {
                   Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
@@ -133,7 +135,7 @@ const GroupsPage = () => {
       });
       
       await axios.post(
-        `http://localhost:4000/api/v1/groups/score`, 
+        `${API_BASE_URL}/api/v1/groups/score`, 
         { groupScore },
         {
           headers: {
@@ -252,7 +254,7 @@ const GroupsPage = () => {
         console.log("Form Data:", formData.get("file")); // Debugging: Check FormData content
         console.log(formData)
        const response= await axios.post(
-          `http://localhost:4000/api/v1/events/event/sendreport`, 
+          `${API_BASE_URL}/api/v1/events/event/sendreport`, 
           formData,
           {
             headers: {

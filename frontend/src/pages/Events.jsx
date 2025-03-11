@@ -282,6 +282,7 @@ import {
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const CATEGORIES = ['technology', 'sports', 'education'];
 const LOCATIONS = ['MMH','Seminar Hall','Center foyer','Canteen','Narayan Bhavan'];
@@ -332,7 +333,7 @@ function Events() {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get('http://localhost:4000/api/v1/events', {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/events`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },

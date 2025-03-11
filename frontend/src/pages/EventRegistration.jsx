@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function EventRegistration() {
   const { id } = useParams();
@@ -19,7 +20,7 @@ function EventRegistration() {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:4000/api/v1/events/view/${id}`);
+        const response = await axios.get(`${API_BASE_URL}/api/v1/events/view/${id}`);
         setEventName(response.data.data.name);
         setUserLimit(response.data.data.userLimit);
         // Initialize memberEmails array with empty strings based on userLimit
@@ -62,7 +63,7 @@ function EventRegistration() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:4000/api/v1/groups/create`, registrationData, {
+      await axios.post(`${API_BASE_URL}/api/v1/groups/create`, registrationData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
         },
