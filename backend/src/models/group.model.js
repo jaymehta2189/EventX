@@ -58,7 +58,7 @@ const group = new Schema({
 group.pre('save', async function (next) {
     // Logic to generate QR code
     try{
-        this.qrCode = await generateQRAndSaveAtCloudinary(`http://localhost:${process.env.PORT}/api/groups/group/qr/${this._id}`);
+        this.qrCode = await generateQRAndSaveAtCloudinary(`https://eventx.up.railway.app/api/groups/group/qr/${this._id}`);
     }catch(error){
         throw new ApiError(GroupError.QR_CODE_GENERATION_FAILED);
     }
