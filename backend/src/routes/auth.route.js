@@ -108,9 +108,9 @@ router.get('/google/callback', async (req, res) => {
       
       return res
         .status(UserSuccess.LOG_IN.statusCode)
-        .cookie('token', token,{path: '/'})
+        .cookie('token', token)
         .redirect(`${process.env.FRONTEND_URL}/home`);
-        
+
       // return res
       //             .status(UserSuccess.LOG_IN.statusCode)
       //             .cookie("token", token)
