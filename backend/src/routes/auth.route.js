@@ -108,14 +108,13 @@ router.get('/google/callback', async (req, res) => {
       
       return res
         .status(UserSuccess.LOG_IN.statusCode)
-        .cookie('token', token)
+        .cookie('token', token,{
+          httpOnly: true,  // Set to false if you need to access it in JavaScript
+          secure: true , // Use secure in production
+          sameSite: 'None', // Needed if frontend and backend are on different domains
+          path: '/',
+        })
         .redirect(`${process.env.FRONTEND_URL}/home`);
-
-      // return res
-      //             .status(UserSuccess.LOG_IN.statusCode)
-      //             .cookie("token", token)
-      //             .json(new ApiResponse(UserSuccess.LOG_IN, token));
-
     }
 
     let authority = await Authority.findOne({ email });
