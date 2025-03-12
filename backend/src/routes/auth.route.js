@@ -7,6 +7,7 @@ const User = require('../models/user.model'); // Adjust the path to your User mo
 const cacheData = require('../service/cacheData.js');
 const moment = require("moment-timezone");
 const Authority = require('../models/authority.model.js');
+const ApiResponse = require('../utils/ApiResponse.js');
 
 const { OAuth2Client } = require('google-auth-library');
 
@@ -105,10 +106,14 @@ router.get('/google/callback', async (req, res) => {
       
       console.log("abc", token);
       
+      // return res
+      //   .status(UserSuccess.LOG_IN.statusCode)
+      //   .cookie('token', token, { path: '/' })
+      //   .redirect(`${process.env.FRONTEND_URL}/about`);
       return res
-        .status(UserSuccess.LOG_IN.statusCode)
-        .cookie('token', token, { path: '/' })
-        .redirect(`${process.env.FRONTEND_URL}/about`);
+                  .status(UserSuccess.LOG_IN.statusCode)
+                  .cookie("token", token)
+                  .json(new ApiResponse(UserSuccess.LOG_IN, token));
 
     }
 
