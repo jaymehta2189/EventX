@@ -106,14 +106,14 @@ router.get('/google/callback', async (req, res) => {
       
       console.log("abc", token);
       
-      // return res
-      //   .status(UserSuccess.LOG_IN.statusCode)
-      //   .cookie('token', token, { path: '/' })
-      //   .redirect(`${process.env.FRONTEND_URL}/about`);
       return res
-                  .status(UserSuccess.LOG_IN.statusCode)
-                  .cookie("token", token)
-                  .json(new ApiResponse(UserSuccess.LOG_IN, token));
+        .status(UserSuccess.LOG_IN.statusCode)
+        .cookie('token', token)
+        .redirect(`${process.env.FRONTEND_URL}/home`);
+      // return res
+      //             .status(UserSuccess.LOG_IN.statusCode)
+      //             .cookie("token", token)
+      //             .json(new ApiResponse(UserSuccess.LOG_IN, token));
 
     }
 
