@@ -98,11 +98,15 @@ router.get('/google/callback', async (req, res) => {
         }
       }
 
+      console.log("abc", token);
+
       await user.save();
       await cacheData.cacheUser(user);
 
       const token = createTokenForUser(user);
-
+      
+      console.log("abc", token);
+      
       return res
         .status(UserSuccess.LOG_IN.statusCode)
         .cookie('token', token, { path: '/' })
