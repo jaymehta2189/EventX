@@ -98,8 +98,6 @@ router.get('/google/callback', async (req, res) => {
         }
       }
 
-      console.log("abc", token);
-
       await user.save();
       await cacheData.cacheUser(user);
 
@@ -110,7 +108,7 @@ router.get('/google/callback', async (req, res) => {
       return res
         .status(UserSuccess.LOG_IN.statusCode)
         .cookie('token', token, { path: '/' })
-        .redirect(`${process.env.FRONTEND_URL}/home`);
+        .redirect(`${process.env.FRONTEND_URL}/about`);
 
     }
 
