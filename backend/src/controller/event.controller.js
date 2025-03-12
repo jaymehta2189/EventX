@@ -21,7 +21,7 @@ const { uploadOnCloudinary } = require('../utils/cloudinary');
 const { isNumberObject } = require("util/types");
 const { eventNames, send } = require("process");
 const { error, Console } = require("console");
-const { broadcastToRoom } = require("../service/configWebSocket");
+// const { broadcastToRoom } = require("../service/configWebSocket");
 const { console } = require("inspector");
 
 function isundefine(variable) {
@@ -279,15 +279,15 @@ const createEvent = asyncHandler(async (req, res) => {
 
         cacheConfig.cacheEvent(event);
 
-        if (setOfBranch.includes('all')) {
-            Event.allowBranch.forEach(branch => {
-                broadcastToRoom(branch, event, "create-event");
-            });
-        } else {
-            setOfBranch.forEach(branch => {
-                broadcastToRoom(branch, event, "create-event");
-            });
-        }
+        // if (setOfBranch.includes('all')) {
+        //     Event.allowBranch.forEach(branch => {
+        //         broadcastToRoom(branch, event, "create-event");
+        //     });
+        // } else {
+        //     setOfBranch.forEach(branch => {
+        //         broadcastToRoom(branch, event, "create-event");
+        //     });
+        // }
 
         return res
             .status(EventSuccess.EVENT_CREATED.statusCode)

@@ -15,7 +15,7 @@ const moment = require('moment-timezone');
 const { google } = require('googleapis');
 const { EventError } = require("../utils/Constants/Event");
 const { getValidAccessTokenForUserObj } = require("../routes/auth.route.js");
-const { broadcastToRoom } = require("../service/configWebSocket.js");
+// const { broadcastToRoom } = require("../service/configWebSocket.js");
 
 // give input should be trim
 async function validateGroupNameInEvent(eventId, groupName) {
@@ -251,11 +251,11 @@ const LeaderCreateGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        if (eventData.joinGroup + 1 == eventData.groupLimit) {
-            eventData.allowBranch.forEach(branch => {
-                broadcastToRoom(branch, { id: event, operation: "remove" }, "remove-event");
-            });
-        }
+        // if (eventData.joinGroup + 1 == eventData.groupLimit) {
+        //     eventData.allowBranch.forEach(branch => {
+        //         broadcastToRoom(branch, { id: event, operation: "remove" }, "remove-event");
+        //     });
+        // }
 
         // console.log("Group Created", existGroup);
 
@@ -357,7 +357,7 @@ const UserJoinGroup = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
 
-        broadcastToRoom(`group:${group._id}`, user,"user-join");
+        // broadcastToRoom(`group:${group._id}`, user,"user-join");
 
         return res.status(GroupSuccess.GROUP_JOIN_SUCCESS.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_JOIN_SUCCESS, existGroup));

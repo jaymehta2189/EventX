@@ -41,7 +41,7 @@ router.get('/google', (req, res) => {
 // change in fronted side 
 router.get('/google/callback', async (req, res) => {
   const { code } = req.query;
-  console.log("code", res);
+  // console.log("code", res);
   try {
 
     const { tokens } = await oauth2Client.getToken(code);
