@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/v1/auth/google/(.*)",
-      "destination": "https://eventx.up.railway.app/api/v1/auth/google/$1"
+      "source": "/api/v1/auth/google/callback",
+      "destination": "https://eventx.up.railway.app/api/v1/auth/google/callback"
     },
     {
       "source": "/api/(.*)",
