@@ -147,10 +147,13 @@ router.get('/google/callback', async (req, res) => {
 
     const token = createTokenForUser(authority);
 
+    // return res
+    //   .status(UserSuccess.LOG_IN.statusCode)
+    //   .cookie('token', token, { path: '/' })
+    //   .redirect(`${process.env.FRONTEND_URL}/home`);
     return res
-      .status(UserSuccess.LOG_IN.statusCode)
-      .cookie('token', token, { path: '/' })
-      .redirect(`${process.env.FRONTEND_URL}/home`);
+    .status(UserSuccess.LOG_IN.statusCode)
+    .redirect(`${process.env.FRONTEND_URL}/auth/redirect?token=${token}`);
   } catch (error) {
     console.error('Error during Google OAuth:', error);
     res.status(500).send('OAuth error');
