@@ -416,7 +416,8 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
             throw new ApiError(GroupError.INVALID_GROUP);
         }
 
-        const groupData = groupDatas[0] , eventData = eventDatas[0];
+        const groupData = groupDatas[0] ;
+        let eventData = eventDatas[0];
 
         if(groupData){
             return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
