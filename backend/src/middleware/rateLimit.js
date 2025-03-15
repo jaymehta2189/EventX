@@ -1,9 +1,18 @@
 const requestTracker = new Map();  
 const MAX_UNIQUE_IPS = 200;  
 const MAX_REQUESTS_PER_MINUTE = 50;
-const TIME_WINDOW_MS = 60 * 1000;  
+const TIME_WINDOW_MS = 60 * 1000;
+const allowedPaths = [
+    '/api/v1/users/signup',
+    '/api/v1/users/signin',
+    '/api/v1/auth/google'
+];
 
-const rateLimiterMiddleware = (req, res, next) => {  
+const rateLimiterMiddleware = (req, res, next) => {
+    // if (allowedPaths.includes(req.path)) {
+    //     return next();
+    // }
+
     const ip = req.ip;
     const currentTime = Date.now();  
 
@@ -21,8 +30,7 @@ const rateLimiterMiddleware = (req, res, next) => {
         if (currentTime - userData.startTime > TIME_WINDOW_MS) {  
             requestTracker.set(ip, { count: 1, startTime: currentTime });  
         } else {  
-            if (userData.count >= MAX_REQUESTS_PER_MINUTE) {  
-                console.log("hello world");
+            if (userData.count >= MAX_REQUESTS_PER_MINUTE) {
                 return res.status(429).json({ error: "Too many requests" });  
             }  
 

@@ -429,8 +429,7 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
         const userData = await cacheData.GetUserDataById("$", ...usersId);
 
         userData.forEach(user => {
-            if (user.gender === "female")
-                eventData--;
+            if (user.gender == "female")eventData--;
         });
 
         if (eventData > 0) {
@@ -450,7 +449,7 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
             }
         }
 
-        await SetCalenders(event, users);
+        SetCalenders(event, users);
 
         const groupsDetail = await Group.findOneAndUpdate(
             { _id: new mongoose.Types.ObjectId(group) },
@@ -458,7 +457,7 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
             { new: true }
         );        
 
-        await RedisClient.call("JSON.SET", `Group:FullData:${group}`, "$", JSON.stringify(groupsDetail));
+        await cacheData.cacheGroup(groupsDetail);
 
         return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
             .json(new ApiResponse(GroupSuccess.GROUP_VERIFIED));

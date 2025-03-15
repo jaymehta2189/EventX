@@ -27,7 +27,7 @@ app.use(cors({
 app.use(
 session(
     {
-        secret: 'EM5VLEfiSTAxjKh5LYfHk3RRKqA8jvzTof8j6FZKmXha3QymTLsYW9RqCcxgOlPl', 
+        secret: process.env.SESSION_SECRET_KEY, 
         resave: false, 
         saveUninitialized: true 
     }
@@ -42,7 +42,7 @@ const EventRouter = require("./routes/event.route.js");
 const GroupRouter = require("./routes/group.route.js");
 const {RedisClient} = require("./service/configRedis.js");
 const {AuthRouter} = require("./routes/auth.route.js");
-// ============================
+// =======================
 
 RedisClient.on('ready', async() => {
     const cacheConfig = require("./service/cacheData.js");
