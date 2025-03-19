@@ -582,9 +582,9 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     const event = events[0];
     const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
 
-    if (new Date(event.endDate) > currentTime) {
-        throw new ApiError(EventError.EVENT_NOT_END);
-    }
+    // if (new Date(event.endDate) > currentTime) {
+    //     throw new ApiError(EventError.EVENT_NOT_END);
+    // }
 
     if (req.user._id !== event.creator) {
         throw new ApiError(GroupError.CREATOR_NOT_AUTHORIZED);

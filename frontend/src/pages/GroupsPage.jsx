@@ -240,26 +240,14 @@ const GroupsPage = () => {
     };
     
     const sendReport = async () => {
-      const doc = await create_pdf(); // Ensure this returns a valid jsPDF document
       try {
         setSendingReport(true);
     
-        const blob = await doc.output("blob");
-        console.log("Generated Blob:", blob); // Debugging: Check if the blob is created
-    
-        const formData = new FormData();
-        formData.append("file", blob, `${eventDetails.name}_groups.pdf`);
-        formData.append("eventId", eventId);
-    
-        console.log("Form Data:", formData.get("file")); // Debugging: Check FormData content
-        console.log(formData)
        const response= await axios.post(
-          `${API_BASE_URL}/api/v1/events/event/sendreport`, 
-          formData,
+          `${API_BASE_URL}/api/v1/events/event/${eventId}/check`,null,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "Content-Type": "multipart/form-data",
             },
             withCredentials: true,
           }
