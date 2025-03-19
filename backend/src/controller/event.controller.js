@@ -648,12 +648,18 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
 
 async function findStaff(branches) { 
     // const authority = await ;
+    const tempData = {
+        "it": ["22ituos126@ddu.ac.in","22ituos145@ddu.ac.in"],
+        "ce": ["22ituos126@ddu.ac.in","22ituos145@ddu.ac.in"]
+    };
     let BranchStaff = {};
 
     for(const branch of branches){
         const ids = await RedisClient.smembers(`Authority:Branch:${branch}`);
-
-        BranchStaff[branch] = await cacheData.GetAuthorityDataById("$.email",...ids);;
+        
+        BranchStaff[branch] = tempData[branch];
+        
+        // BranchStaff[branch] = await cacheData.GetAuthorityDataById("$.email",...ids);;
     }
 
     return BranchStaff;
