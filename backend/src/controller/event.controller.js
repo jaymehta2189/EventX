@@ -28,6 +28,10 @@ function isundefine(variable) {
     return typeof variable === 'undefined';
 }
 
+
+// const checkEventFull = async function (eventId) {
+//     const event = await Event.findById(eventId).select("joinGroup groupLimit").lean();   
+
 async function SameNameInCache(EventName) {
     try {
         let cursor = '0';
