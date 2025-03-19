@@ -13,6 +13,7 @@ const cacheData = require("../service/cacheData");
 const Group = require("../models/group.model");
 
 const cacheConfig = require("../service/cacheData");
+const { Parser } = require('json2csv');
 const json2csv = require('json2csv').parse;
 const fs = require('fs');
 const path = require('path');
