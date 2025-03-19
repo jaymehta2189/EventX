@@ -491,10 +491,18 @@ async function generateCSVFilesForBranches(data) {
     for (const branch in data) {
         if (branch !== 'EventName' && branch !== 'StartDate' && branch !== 'EndDate') {
             try {
-                if (data[branch].users) {
-                    const csv = json2csv(data[branch].users);
+                if (data[branch].users && data[branch].users.length > 0) {
+                    const eventDetails = `EventName: ${data.EventName}\nStartDate: ${data.StartDate}\nBranch: ${branch}\n\n`;
+                    
+                    const json2csvParser = new Parser();
+                    const userCSV = json2csvParser.parse(data[branch].users);
+    
+                    const finalCSV = `${eventDetails}${userCSV}`;
+    
                     const filePath = path.join(csvDir, `${branch}_event_data.csv`);
-                    fs.writeFileSync(filePath, csv);
+    
+                    fs.writeFileSync(filePath, finalCSV);
+    
                     csvFilePaths[branch] = filePath;
                 } else {
                     console.error(`No users found for branch ${branch}`);
@@ -555,6 +563,7 @@ async function sendEmailsToHODs(branchData) {
         console.log('CSV files generated for all branches.');
         const emailPromises = [];
         for (const branch of Object.keys(branchData)) {
+            if(branch === 'EventName' || branch === 'StartDate' || branch === 'EndDate') continue;
             await sendEmailsForBranch(branch, branchData[branch], csvFilePaths);
         }
         console.log('Emails sent to all HODs.');
