@@ -23,6 +23,7 @@ const { eventNames, send } = require("process");
 const { error, Console } = require("console");
 // const { broadcastToRoom } = require("../service/configWebSocket");
 const { console } = require("inspector");
+const e = require("express");
 
 function isundefine(variable) {
     return typeof variable === 'undefined';
@@ -483,12 +484,12 @@ async function cacheFindAllEvent(req, res, next) {
 
 async function generateCSVFilesForBranches(data) {
     const csvFilePaths = {};
-
+    console.log('Generating CSV files for all branches...');
     const csvDir = path.join(__dirname, '../../public/csv/');
     if (!fs.existsSync(csvDir)) {
         fs.mkdirSync(csvDir, { recursive: true });
     }
-
+    console.log('CSV directory created:', csvDir);
     for (const branch in data) {
         if (branch !== 'EventName' && branch !== 'StartDate' && branch !== 'EndDate') {
             try {
@@ -505,6 +506,7 @@ async function generateCSVFilesForBranches(data) {
             }
         }
     }
+    console.log('CSV files generated for all branches.');
 
     return csvFilePaths;
 }
@@ -550,13 +552,14 @@ async function sendEmailsForBranch(branch, branchDetails, csvFilePaths) {
 
 async function sendEmailsToHODs(branchData) {
     try {
+        console.log('Sending emails to HODs...');
         const csvFilePaths = await generateCSVFilesForBranches(branchData);
-
+        console.log('CSV files generated for all branches.');
         const emailPromises = [];
         for (const branch of Object.keys(branchData)) {
             emailPromises.push(sendEmailsForBranch(branch, branchData[branch], csvFilePaths));
         }
-
+        console.log('Emails sent to all HODs.');
         await Promise.all(emailPromises); 
         console.log('All emails processed.');
 
@@ -569,7 +572,7 @@ async function sendEmailsToHODs(branchData) {
 
 const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     const eventId = req.params.id;
-
+    console.log("Step 1: Inside validateAndSendHODEmails",eventId);
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
         throw new ApiError(EventError.INVALID_EVENT_ID);
     }
@@ -578,14 +581,14 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     if (events.length === 0) {
         throw new ApiError(EventError.EVENT_NOT_FOUND);
     }
-
+    console.log("Step 2: Event Found",events);
     const event = events[0];
     const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
 
     // if (new Date(event.endDate) > currentTime) {
     //     throw new ApiError(EventError.EVENT_NOT_END);
     // }
-
+    console.log("Step 3: Event End Time",event.endDate);
     if (req.user._id !== event.creator) {
         throw new ApiError(GroupError.CREATOR_NOT_AUTHORIZED);
     }
@@ -593,7 +596,7 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     const joinedGroupIds = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
 
     const joinedGroups = await cacheData.GetGroupDataById('$', ...joinedGroupIds);
-
+    console.log("Step 4: Joined Groups",joinedGroups);
     const scannedGroupIds = joinedGroups
         .filter(group => group.qrCodeScan)
         .map(group => group._id);
@@ -612,9 +615,9 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     }
 
     const branches = [...new Set(users.map(user => user.branch))];
-
+    console.log("Step 5: Branches",branches);
     const BranchStaff = await findStaff(branches);
-
+    console.log("Step 5: Branch Staff",BranchStaff);
     const groupedUsersByBranch = users.reduce((result, user) => {
         const branchId = user.branch;
         if (!result[branchId]) {
@@ -639,7 +642,7 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     groupedUsersByBranch['EndDate'] = event.endDate;
 
     // Send emails to all HODs
-    sendEmailsToHODs(groupedUsersByBranch);
+    await sendEmailsToHODs(groupedUsersByBranch);
 
     return res
         .status(EventSuccess.SEND_MAIL.statusCode)
