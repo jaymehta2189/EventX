@@ -530,8 +530,11 @@ async function deleteCSVFiles(csvFilePaths) {
     }
 }
 
-async function sendEmailsForBranch(branch, branchDetails, csvFilePaths) {
+async function sendEmailsForBranch(branch, branchData, csvFilePaths) {
     const filePath = csvFilePaths[branch];
+
+    const branchDetails = branchData[branch];
+
     if (!filePath) {
         console.warn(`No CSV file found for branch ${branch}. Email will not be sent.`);
         return;
@@ -541,8 +544,8 @@ async function sendEmailsForBranch(branch, branchDetails, csvFilePaths) {
         const mailOptions = {
             from: 'EventX',
             to: email,
-            subject: `Event Report: ${branchDetails.EventName}`, // ✅ Ensure event details are inside branchDetails
-            text: `Please find attached the report for the event "${branchDetails.EventName}" held from ${branchDetails.StartDate} to ${branchDetails.EndDate}.`,
+            subject: `Event Report: ${branchData.EventName}`, // ✅ Ensure event details are inside branchDetails
+            text: `Please find attached the report for the event "${branchData.EventName}" held from ${branchData.StartDate} to ${branchData.EndDate}.`,
             attachments: [{ filename: `${branch}_event_data.csv`, path: filePath }]
         };
 
@@ -564,7 +567,7 @@ async function sendEmailsToHODs(branchData) {
         const emailPromises = [];
         for (const branch of Object.keys(branchData)) {
             if(branch === 'EventName' || branch === 'StartDate' || branch === 'EndDate') continue;
-            await sendEmailsForBranch(branch, branchData[branch], csvFilePaths);
+            await sendEmailsForBranch(branch, branchData, csvFilePaths);
         }
         console.log('Emails sent to all HODs.');
         // await Promise.all(emailPromises); 
