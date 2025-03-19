@@ -20,9 +20,7 @@ const { transporter } = require('nodemailer');
 const { uploadOnCloudinary } = require('../utils/cloudinary');
 const { isNumberObject } = require("util/types");
 const { eventNames, send } = require("process");
-const { error, Console } = require("console");
 // const { broadcastToRoom } = require("../service/configWebSocket");
-const { console } = require("inspector");
 const e = require("express");
 
 function isundefine(variable) {
@@ -557,10 +555,10 @@ async function sendEmailsToHODs(branchData) {
         console.log('CSV files generated for all branches.');
         const emailPromises = [];
         for (const branch of Object.keys(branchData)) {
-            emailPromises.push(sendEmailsForBranch(branch, branchData[branch], csvFilePaths));
+            await sendEmailsForBranch(branch, branchData[branch], csvFilePaths);
         }
         console.log('Emails sent to all HODs.');
-        await Promise.all(emailPromises); 
+        // await Promise.all(emailPromises); 
         console.log('All emails processed.');
 
         await deleteCSVFiles(csvFilePaths);
@@ -573,6 +571,7 @@ async function sendEmailsToHODs(branchData) {
 const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     const eventId = req.params.id;
     console.log("Step 1: Inside validateAndSendHODEmails",eventId);
+    // console.log
     if (!mongoose.Types.ObjectId.isValid(eventId)) {
         throw new ApiError(EventError.INVALID_EVENT_ID);
     }
@@ -674,6 +673,7 @@ const getAllEventCreateByOrg = asyncHandler(async (req, res) => {
         const orgId = req.params.orgId;
         const eventIds = await RedisClient.smembers(`Event:Org:${orgId}`);
         const events = await cacheData.GetEventDataById('$', ...eventIds);
+    
 
         return res.status(EventSuccess.EVENT_ALL_FOUND.statusCode)
             .json(new ApiResponse(EventSuccess.EVENT_ALL_FOUND, events));
