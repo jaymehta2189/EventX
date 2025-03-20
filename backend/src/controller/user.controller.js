@@ -650,7 +650,11 @@ const modifieUserToOrg = asyncHandler(async (req, res) => {
 const IsUserSetProfile = asyncHandler(async (req, res) => {
     const userId = req.params.id;
 
+    console.log(userId);
+
     const user = await cacheData.GetUserDataById("$.setProfile", userId);
+
+    console.log(user);
 
     if (user.length === 0) {
         throw new ApiError(UserError.USER_NOT_FOUND);
