@@ -108,10 +108,10 @@ function Events() {
     setSelectedDate('');
   };
 
-  const handleEventClick = (event) => {
+  const handleEventClick = async(event) => {
     if(userRole==='org'||userRole==='user'){
 
-      const response = axios.get(`${API_BASE_URL}/api/v1/users/user/profile/${userData._id}`, null, {
+      const response = await axios.get(`${API_BASE_URL}/api/v1/users/user/profile/${userData._id}`, null, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         }});
