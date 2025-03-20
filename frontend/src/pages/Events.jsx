@@ -115,7 +115,7 @@ function Events() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         }});
-        if(!response.data.data){
+        if(!response.data){
           navigate('/edit-profile');
         }
     }
