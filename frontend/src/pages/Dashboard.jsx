@@ -66,8 +66,22 @@ export default function Dashboard() {
           });
           setCreatedEvents(createdEventsResponse.data.data || [])
         }
+        
       } catch (error) {
         console.error("Error fetching data:", error)
+        try{
+          if (userResponse.data.data.role === "org") {
+            const createdEventsResponse = await axios.get(`${API_BASE_URL}/api/v1/events/org/${id}`, {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+              },
+              withCredentials: true, // Ensures cookies are sent
+            });
+            setCreatedEvents(createdEventsResponse.data.data || [])
+          }
+        }catch (error) {
+          console.error("Error fetching data:", error)
+        }
       } finally {
         setLoading(false)
       }

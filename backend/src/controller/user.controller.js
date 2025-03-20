@@ -647,6 +647,18 @@ const modifieUserToOrg = asyncHandler(async (req, res) => {
             .json(new ApiResponse(UserSuccess.USER_UPDATED));
 });
 
+const IsUserSetProfile = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+
+    const user = await cacheData.GetUserDataById("$.setProfile", userId);
+
+    if (user.length === 0) {
+        throw new ApiError(UserError.USER_NOT_FOUND);
+    }
+
+    return res.status(UserSuccess.USER_FOUND.statusCode)
+        .json(new ApiResponse(UserSuccess.USER_FOUND, user[0]));
+});
 module.exports = {
 
     viewUserProfile,
@@ -672,5 +684,6 @@ module.exports = {
 
     getuserBySem,
     getUserByEmail,
-    modifieUserToOrg
+    modifieUserToOrg,
+    IsUserSetProfile
 };

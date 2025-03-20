@@ -17,6 +17,7 @@ function EditProfile() {
     rollno: '',
     contactdetails: ''
   });
+  const [result, setResult] = useState('');
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -24,6 +25,11 @@ function EditProfile() {
         const response = await axios.get(`${API_BASE_URL}/api/v1/users/user/${id}`);
 
         console.log(response.data);
+        // const genderr='';
+        // if (response.data.data.setProfile) {
+        //   genderr=response.data.data.gender;
+        // }
+        setResult(response.data.data);
         setFormData(prevData => ({
           ...prevData,
           name: response.data.data.name
@@ -46,10 +52,6 @@ function EditProfile() {
     try {
       const response = await axios.post(`${API_BASE_URL}/api/v1/users/profile/${id}`, formData);
      
-        // const token = response.data.data;
-        // console.log("update profile token", token);
-        // localStorage.setItem('token', token);
-        // axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         toast.success('Updated successfully!');
         console.log("update profile", response.data);
         navigate('/home');
@@ -96,30 +98,26 @@ function EditProfile() {
                 />
               </div>
 
-              {/* Role Selection */}
-              {/* <div>
-                <label className="inline-flex items-center text-sm font-medium text-gray-700 mb-2">
-                  <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Role
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Role</option>
-                  <option value="user">User</option>
-                  <option value="org">Organization</option>
-                  <option value="admin">Admin</option>
-                  <option value="hod">HOD</option>
-                </select>
-              </div> */}
+             
 
               {/* Gender Selection */}
+              {result.setProfile ?  (
+                <div>
+                <label className="inline-flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Gender
+                </label>
+                <input
+                  name="gender"
+                  value={result.gender}
+                  disabled
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              ):(
               <div>
                 <label className="inline-flex items-center text-sm font-medium text-gray-700 mb-2">
                   <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,6 +137,7 @@ function EditProfile() {
                   <option value="female">Female</option>
                 </select>
               </div>
+            )}
 
               {/* Semester Selection */}
               <div>

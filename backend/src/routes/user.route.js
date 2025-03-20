@@ -21,6 +21,7 @@ router.get("/orgs/:branch",checkForAuth,userController.getOrganizationsByBranch)
 router.get("/orgs",checkForAuth,userController.getAllOrganizations);
 
 router.post("/profile/:id",userController.updateProfile);
+router.get('/user/profile/:id',checkForAuth,userController.IsUserSetProfile);
 
 router.post("/sem/user",checkForAuth,userController.getuserBySem);
 router.post("/branch/user",checkForAuth,userController.getUserByEmail);
