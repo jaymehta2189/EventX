@@ -26,7 +26,7 @@ const LeaderBoard = () => {
           console.log(response.data.data);
           console.log(response.data.data.groups);
 
-        setGroups(response.data.data.groups);
+        setGroups(response.data.data);
       } catch (err) {
         setError('Failed to load leaderboard data');
       } finally {
