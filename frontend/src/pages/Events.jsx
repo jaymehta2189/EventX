@@ -118,15 +118,13 @@ function Events() {
         console.log(response.data);
       
         if(response.data.data == false){
-          console.log("profile not set");
           navigate(`/edit-profile/${userData._id}`);
+        }else{
+          navigate(`/events/${event._id}`);
         }
-        console.log("profile set");
+    }else{
+      navigate(`/events/${event._id}`);
     }
-      if (userRole !== 'staff') {
-        console.log("event clicked");
-        navigate(`/events/${event._id}`);
-      }
       
   };
 
