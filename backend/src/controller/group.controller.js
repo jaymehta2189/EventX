@@ -54,19 +54,16 @@ async function validateAllowBranch(allowBranch, user) {
     }
 }
 const scanGroupQRCode = asyncHandler(async (req, res) => {
-    let responseCode = 500;
     console.log("Scan QR code");
     try {
         const groupId = req.params.groupId;
         console.log(groupId);
         if (!mongoose.Types.ObjectId.isValid(groupId)) {
-            responseCode = 404;
             throw new ApiError(GroupError.INVALID_GROUP);
         }
 
         const groupDatas = await cacheData.GetGroupDataById('$', groupId);
         if (groupDatas.length === 0) {
-            responseCode = 403;
             throw new ApiError(GroupError.INVALID_GROUP);
         }
 
@@ -74,7 +71,6 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
 
         const eventDatas = await cacheData.GetEventDataById('$', groupData.event);
         if (eventData.length === 0) {
-            responseCode = 404;
             throw new ApiError(GroupError.INVALID_EVENT);
         }
 
@@ -87,12 +83,10 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
         // }
         console.log("Event Start");
         if (req.params.userId !== eventData.creator.toString()) {
-            responseCode = 401;
             throw new ApiError(GroupError.INVALID_USER);
         }
 
         if (groupData.qrCodeScan) {
-            responseCode = 400;
             throw new ApiError(GroupError.QR_ALREADY_SCAN);
         }
         console.log("QR code scan");
