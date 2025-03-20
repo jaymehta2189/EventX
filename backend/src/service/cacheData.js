@@ -375,7 +375,7 @@ async function GetGroupIdsByUserId(userId) {
 
 async function GetUserIdsByGroupId(groupId) {
     try{
-        return (await RedisClient.smember(`Group:Join:${groupId}`));
+        return (await RedisClient.smembers(`Group:Join:${groupId}`));
     }catch(error){
         return [];
     }

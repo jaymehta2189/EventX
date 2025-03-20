@@ -420,6 +420,7 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
         }
 
         const usersId = await cacheData.GetUserIdsByGroupId(group);
+        console.log(usersId);
 
         const userData = await cacheData.GetUserDataById("$", ...usersId);
         console.log(userData);
