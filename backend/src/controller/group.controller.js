@@ -583,11 +583,17 @@ const assignScore = asyncHandler(async(req,res)=>{
 
     const groupIds = Object.keys(groupScore);
     let updateGroup = [];
+
+    let winnerGroup = null;
     
     for(const Id of groupIds){
         const group = await cacheData.GetGroupDataById("$",Id);
         if(group.length != 0){
             group[0].score = groupScore[Id];
+            if(winnerGroup == null || winnerGroup.score < groupScore[Id]){
+                winnerGroup = group[0];
+            }
+
             // updateGroup.push(cacheData.cacheGroup(group[0]));
             await cacheData.cacheGroup(group[0]);
 
@@ -599,6 +605,14 @@ const assignScore = asyncHandler(async(req,res)=>{
             })
         }
     }
+
+    if(winnerGroup != null){
+        const event = await cacheData.GetEventDataById("$",winnerGroup.event);
+        event[0].winnerGroup = winnerGroup._id;
+        await cacheData.cacheEvent(event[0]);  
+        await Event.updateOne({_id:winnerGroup.event},{winnerGroup:winnerGroup._id});
+    }
+
     if(updateGroup.length>0){
         await Group.bulkWrite(updateGroup);
     }
