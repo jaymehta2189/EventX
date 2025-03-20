@@ -51,11 +51,12 @@ function Events() {
   const navigate = useNavigate();
   const { authToken } = useContext(AuthContext);
   const [userRole, setUserRole] = useState(null);
-
+  const [userData, setUserData] = useState(null);
   useEffect(() => {
     if (authToken) {
       try {
         const userData = JSON.parse(atob(authToken.split('.')[1]));
+        setUserData(userData);
         setUserRole(userData.role);
       } catch (error) {
         console.error('Error parsing token:', error);
