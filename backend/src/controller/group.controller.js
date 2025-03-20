@@ -403,7 +403,7 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
     try {
         const groupDatas = await cacheData.GetGroupDataById("$.isVerified", group);
         const eventDatas = await cacheData.GetEventDataById("$.girlMinLimit", event);
-        console.log(groupDatas, eventDatas);
+        console.log("hello",groupDatas, eventDatas);
 
         if (groupDatas.length === 0 || eventDatas.length === 0) {
             throw new ApiError(GroupError.INVALID_GROUP);
@@ -412,7 +412,7 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
         const groupData = groupDatas[0] ;
         let eventData = eventDatas[0];
 
-        console.log(groupData, eventData);
+        console.log("2hhhhh",groupData, eventData);
 
         if(groupData){
             return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
@@ -422,12 +422,13 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
         const usersId = await cacheData.GetUserIdsByGroupId(group);
 
         const userData = await cacheData.GetUserDataById("$", ...usersId);
-
+        console.log(userData);
         userData.forEach(user => {
+            
             if (user.gender == "female")eventData--;
         });
 
-        console.log(userData);
+        console.log(userData,eventData);
 
         if (eventData > 0) {
             throw new ApiError(GroupError.INVALID_VERIFICATION);
