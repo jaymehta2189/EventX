@@ -53,13 +53,12 @@ async function validateAllowBranch(allowBranch, user) {
         throw new ApiError(GroupError.MEMBER_BRANCH_INVALIED);
     }
 }
-
 const scanGroupQRCode = asyncHandler(async (req, res) => {
     let responseCode = 500;
-
+    console.log("Scan QR code");
     try {
         const groupId = req.params.groupId;
-
+        console.log(groupId);
         if (!mongoose.Types.ObjectId.isValid(groupId)) {
             responseCode = 404;
             throw new ApiError(GroupError.INVALID_GROUP);
@@ -82,12 +81,12 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
         const eventData = eventDatas[0];
 
         const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
-        if (eventData.startDate > currentTime || eventData.endDate < currentTime) {
-            responseCode = 402;
-            throw new ApiError(GroupError.EVENT_NOT_START);
-        }
-
-        if (req.user._id !== eventData.creator.toString()) {
+        // if (eventData.startDate > currentTime || eventData.endDate < currentTime) {
+        //     responseCode = 402;
+        //     throw new ApiError(GroupError.EVENT_NOT_START);
+        // }
+        console.log("Event Start");
+        if (req.params.userId !== eventData.creator.toString()) {
             responseCode = 401;
             throw new ApiError(GroupError.INVALID_USER);
         }
@@ -96,23 +95,23 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
             responseCode = 400;
             throw new ApiError(GroupError.QR_ALREADY_SCAN);
         }
-
-        await RedisClient.call("JSON.SET", `Group:FullData:${groupId}`, '$.qrCodeScan', true);
-        await Group.findByIdAndUpdate(groupId, { qrCodeScan: true });
-
-        const successRedirectURL = `..../scan-success?code=200&groupName=${encodeURIComponent(groupData.name)}`;
-        return res.redirect(successRedirectURL);
+        console.log("QR code scan");
+        groupData.qrCodeScan = true;
+        await cacheData.cacheGroup(groupData);
+        console.log("Cache Data");
+        await Group.updateOne({ _id: new mongoose.Types.ObjectId(groupId) }, { qrCodeScan: true });
+        console.log("Update Data");
+        return res.status(GroupSuccess.QR_SCAN.statusCode).json(new ApiResponse(GroupSuccess.QR_SCAN));
 
     } catch (error) {
         if (error instanceof ApiError) {
-            return res.redirect(`..../scan-error?code=${encodeURIComponent(responseCode)}`);
+            throw error;
         }
 
         console.error('Unexpected error during QR code scanning:', error);
-        return res.status(responseCode).send("An error occurred during QR code scanning.");
+        return res.status(GroupError.QR_CODE_GENERATION_FAILED.statusCode).json(new ApiResponse({ message:"Error will scan QR code" }));
     }
 });
-
 const validateUser = async (eventId, userId) => {
     try {
         const events = await cacheData.GetEventDataById('$', eventId);
@@ -405,12 +404,12 @@ async function SetCalenders(eventId, users) {
         console.error("Error creating event in Google Calendar:", error);
     }
 }
-
 const VerificationOfGroup = asyncHandler(async (req, res) => {
     const { group, event } = req.body;
     try {
         const groupDatas = await cacheData.GetGroupDataById("$.isVerified", group);
         const eventDatas = await cacheData.GetEventDataById("$.girlMinLimit", event);
+        console.log(groupDatas, eventDatas);
 
         if (groupDatas.length === 0 || eventDatas.length === 0) {
             throw new ApiError(GroupError.INVALID_GROUP);
@@ -418,6 +417,8 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
 
         const groupData = groupDatas[0] ;
         let eventData = eventDatas[0];
+
+        console.log(groupData, eventData);
 
         if(groupData){
             return res.status(GroupSuccess.GROUP_VERIFIED.statusCode)
@@ -431,6 +432,8 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
         userData.forEach(user => {
             if (user.gender == "female")eventData--;
         });
+
+        console.log(userData);
 
         if (eventData > 0) {
             throw new ApiError(GroupError.INVALID_VERIFICATION);
@@ -449,6 +452,8 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
             }
         }
 
+        console.log(users);
+
         SetCalenders(event, users);
 
         const groupsDetail = await Group.findOneAndUpdate(
@@ -456,6 +461,8 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
             { $set: { isVerified: true } },
             { new: true }
         );        
+
+        console.log(groupsDetail);
 
         await cacheData.cacheGroup(groupsDetail);
 
@@ -471,7 +478,6 @@ const VerificationOfGroup = asyncHandler(async (req, res) => {
         throw new ApiError(GroupError.INVALID_VERIFICATION);
     }
 });
-
 const getUserInGroup = asyncHandler(async (req, res) => {
 
     try {

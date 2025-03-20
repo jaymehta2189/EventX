@@ -117,7 +117,7 @@ import Dashboard from './pages/Dashboard';
 import ManageOrganizer from './pages/ManageOrganizer';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import ScanQR from './pages/ScanQR';
 function App() {
   return (
     <AuthProvider>
@@ -200,6 +200,12 @@ function App() {
               </PrivateRoute>
             } 
           />
+          <Route
+           path="/scan-qr/:id"
+          element={
+          <PrivateRoute>
+            <ScanQR/>
+            </PrivateRoute>} />
         </Routes>
       </Router>
     </AuthProvider> 
