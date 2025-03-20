@@ -59,8 +59,10 @@ const ScanQR = () => {
 
         console.log("Response Data:", response.data);
         toast.success(response.data.message || "Attendance marked successfully!");
+        setScanResult(response.data);
       } catch (error) {
         console.error("Error processing QR code:", error);
+        setError(error.response?.data?.message);
         toast.error(error.response?.data?.message || "Failed to process QR code");
       } finally {
         setProcessing(false);
