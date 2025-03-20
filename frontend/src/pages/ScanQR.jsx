@@ -306,6 +306,7 @@ const ScanQR = () => {
     setError(null);
     setScanning(true);
     setProcessing(false);
+    navigate(`/scan-qr/${id}`);
   };
 
   return (
