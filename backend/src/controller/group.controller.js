@@ -70,7 +70,7 @@ const scanGroupQRCode = asyncHandler(async (req, res) => {
         const groupData = groupDatas[0];
 
         const eventDatas = await cacheData.GetEventDataById('$', groupData.event);
-        if (eventData.length === 0) {
+        if (eventDatas.length === 0) {
             throw new ApiError(GroupError.INVALID_EVENT);
         }
 
