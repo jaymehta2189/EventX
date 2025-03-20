@@ -203,8 +203,7 @@
 
 // export default ScanQR;
 
-
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -227,18 +226,18 @@ const ScanQR = () => {
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [scanner, setScanner] = useState(null);
+  const scannerRef = useRef(null);
 
   const processQRCode = useCallback(async (decodedText) => {
-    if (processing || !scanning) return; // Prevent multiple scans
+    if (processing) return;
     
     setProcessing(true);
     setScanning(false);
 
     try {
       // Stop the scanner immediately
-      if (scanner) {
-        scanner.pause();
+      if (scannerRef.current) {
+        scannerRef.current.pause();
       }
 
       const response = await axios.get(`${decodedText}/${id}`, {
@@ -256,24 +255,24 @@ const ScanQR = () => {
       toast.success(response.data.message || "Attendance marked successfully!");
       
       // Clear scanner after successful scan
-      if (scanner) {
-        scanner.clear();
+      if (scannerRef.current) {
+        scannerRef.current.clear();
       }
 
     } catch (error) {
       console.error("Error processing QR code:", error);
       setError(error.response?.data?.message || "Failed to process QR code");
       toast.error(error.response?.data?.message || "Failed to process QR code");
-      setScanning(true); // Allow scanning again in case of error
+      setScanning(true);
     } finally {
       setProcessing(false);
     }
-  }, [id, processing, scanning, scanner]);
+  }, [id, processing]);
 
   useEffect(() => {
     if (!scanning) return;
 
-    const newScanner = new Html5QrcodeScanner(
+    const scanner = new Html5QrcodeScanner(
       "reader",
       {
         fps: 10,
@@ -286,28 +285,27 @@ const ScanQR = () => {
       false
     );
 
-    setScanner(newScanner);
+    scannerRef.current = scanner;
 
-    newScanner.render(processQRCode, (errorMessage) => {
+    scanner.render(processQRCode, (errorMessage) => {
       console.error("QR Scan Error:", errorMessage);
     });
 
     return () => {
-      if (newScanner) {
-        newScanner.clear();
+      if (scannerRef.current) {
+        scannerRef.current.clear();
       }
     };
   }, [scanning, processQRCode]);
 
   const handleReset = () => {
-    if (scanner) {
-      scanner.clear();
+    if (scannerRef.current) {
+      scannerRef.current.clear();
     }
     setScanResult(null);
     setError(null);
     setScanning(true);
     setProcessing(false);
-    window.location.reload();
   };
 
   return (
