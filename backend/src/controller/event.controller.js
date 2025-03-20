@@ -834,6 +834,29 @@ const sendReport = asyncHandler(async (req, res,next) => {
       return res.status(500).json({ error: "Internal Server Error" });
     }
   });
+  const getLeaderBoardOfEvent = asyncHandler(async (req, res) => {
+    try {
+        const eventId = req.params.id;
+
+        const eventDetails = await cacheData.GetEventDataById('$.winnerGroup', eventId);
+        if (eventDetails.length === 0 || eventDetails[0] == null) {
+            throw new ApiError(EventError.RESULT_NOT_DECLARED);
+        }
+        
+        const groupId = await RedisClient.smembers(`Event:Join:groups:${eventId}`);
+
+        const groupData = await cacheData.GetGroupDataById('$', ...groupId) || [];
+        const groups = groupData
+                        .filter(group => group.isVerified)
+                        .sort((a, b) => a.score - b.score);
+
+        return res.status(EventSuccess.EVENT_FOUND.statusCode)
+            .json(new ApiResponse(EventSuccess.EVENT_FOUND, groups));
+    } catch (err) {
+        console.log(err.message);
+        throw new ApiError(EventError.EVENT_NOT_FOUND);
+    }
+});
   
 module.exports = {
     // function
@@ -851,7 +874,7 @@ module.exports = {
     getGroupInEvent,
     getUserInEvent,
     getAllEventCreateByOrg,
-
+    getLeaderBoardOfEvent,
     generateGroupReportCSV,
     // write findHOD
     validateAndSendHODEmails

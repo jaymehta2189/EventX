@@ -16,7 +16,7 @@ router.post("/event/:id/check",checkForAuth,checkForOrg,eventController.validate
 
 router.get("/staff/events",checkForAuth,checkForStaff,eventController.cacheFindAllEvent);
 router.get("/admin/events",checkForAuth,checkForAdmin,eventController.cacheFindAllEvent);
-
+router.get("/event/leaderboard/:id",checkForAuth,eventController.getLeaderBoardOfEvent);
 router.post("/event/groups/report",checkForAuth,checkForOrg,eventController.generateGroupReportCSV);
   
   

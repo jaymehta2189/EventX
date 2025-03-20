@@ -117,6 +117,7 @@ import Dashboard from './pages/Dashboard';
 import ManageOrganizer from './pages/ManageOrganizer';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import LeaderBoard from './pages/LeaderBoard';
 import ScanQR from './pages/ScanQR';
 function App() {
   return (
@@ -197,6 +198,14 @@ function App() {
             element={
               <PrivateRoute>
                 <ManageOrganizer />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
+            path="/leaderboard/:id"
+            element={
+              <PrivateRoute>
+                <LeaderBoard />
               </PrivateRoute>
             } 
           />

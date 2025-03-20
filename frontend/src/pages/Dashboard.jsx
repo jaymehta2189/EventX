@@ -66,7 +66,7 @@ export default function Dashboard() {
           });
           setCreatedEvents(createdEventsResponse.data.data || [])
         }
-        
+
       } catch (error) {
         console.error("Error fetching data:", error)
         try{
@@ -118,7 +118,9 @@ export default function Dashboard() {
       console.error("Error fetching group members:", error)
     }
   }
-
+   const viewLeaderboard = async (eventId) => {
+    navigate(`/leaderboard/${eventId}`);
+   }
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
       weekday: "long",
@@ -280,6 +282,13 @@ export default function Dashboard() {
                       >
                         <QrCode className="h-4 w-4 mr-2" />
                         Show QR
+                      </button>
+                      <button
+                        onClick={() => viewLeaderboard(event.event._id)}
+                        className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                      >
+                        <QrCode className="h-4 w-4 mr-2" />
+                        Leaderboard
                       </button>
                     </div>
                   </div>
