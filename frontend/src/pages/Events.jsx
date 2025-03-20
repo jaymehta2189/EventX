@@ -108,17 +108,20 @@ function Events() {
   };
 
   const handleEventClick = (event) => {
-    if (userRole !== 'staff') {
-      navigate(`/events/${event._id}`);
-    }
-    const response = axios.get(`${API_BASE_URL}/api/v1/users/user/profile/${userData._id}`, null, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      }});
-      if(!response.data.data){
-        navigate('/edit-profile');
-      }
+    if(userRole==='org'||userRole==='user'){
 
+      const response = axios.get(`${API_BASE_URL}/api/v1/users/user/profile/${userData._id}`, null, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }});
+        if(!response.data.data){
+          navigate('/edit-profile');
+        }
+    }
+      if (userRole !== 'staff') {
+        navigate(`/events/${event._id}`);
+      }
+      
   };
 
   if (isLoading) {
