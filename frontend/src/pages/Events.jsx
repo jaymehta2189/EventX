@@ -116,11 +116,15 @@ function Events() {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         }});
         console.log(response.data);
-        if(!response.data.data){
+      
+        if(response.data.data == false){
+          console.log("profile not set");
           navigate(`/edit-profile/${userData._id}`);
         }
+        console.log("profile set");
     }
       if (userRole !== 'staff') {
+        console.log("event clicked");
         navigate(`/events/${event._id}`);
       }
       
