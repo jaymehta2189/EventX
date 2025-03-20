@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Medal, Users, AlertCircle } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
