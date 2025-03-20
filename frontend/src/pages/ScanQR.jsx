@@ -85,8 +85,9 @@ const ScanQR = () => {
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
-
   useEffect(() => {
+    if (!scanning) return; // Prevent unnecessary scanner reinitialization
+
     const scanner = new Html5QrcodeScanner(
       "reader",
       {
@@ -95,43 +96,39 @@ const ScanQR = () => {
         aspectRatio: 1.0,
         showTorchButtonIfSupported: true,
         showZoomSliderIfSupported: true,
-        defaultZoomValueIfSupported: 2
+        defaultZoomValueIfSupported: 2,
       },
       false
     );
 
     const processQRCode = async (decodedText) => {
+      if (processing) return; // Prevent multiple scans while processing
       setProcessing(true);
+      setScanning(false); // Stop scanning immediately
+
       try {
-        const response = await axios.get(
-          `${decodedText}/${id}`,
-          null,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            withCredentials: true,
-          }
-        );
         console.log("Scanned QR Code:", decodedText);
-        console.log("Response:", response);
-        console.log("Response Data:", response.data);
-        setScanResult({
-          success: true,
-          message: response.data.message || "Attendance marked successfully!",
-          data: response.data
-        });
         
-        toast.success("Attendance marked successfully!");
-        
-        // Stop scanning after successful scan
-        setScanning(false);
+        // Stop scanner before making the request
         scanner.clear();
 
+        const response = await axios.get(`${decodedText}/${id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          withCredentials: true,
+        });
 
+        console.log("Response Data:", response.data);
+        toast.success(response.data.message || "Attendance marked successfully!");
+
+        // Redirect to home after 2 seconds
+        setTimeout(() => navigate("/"), 2000);
+        
       } catch (error) {
-        setError(error.response?.data?.message || "Failed to process QR code");
+        console.error("Error processing QR code:", error);
         toast.error(error.response?.data?.message || "Failed to process QR code");
+        setScanning(true); // Allow scanning again in case of an error
       } finally {
         setProcessing(false);
       }
@@ -142,9 +139,10 @@ const ScanQR = () => {
     });
 
     return () => {
-      scanner.clear();
+      scanner.clear(); // Cleanup scanner on unmount
     };
-  }, [navigate]);
+  }, [navigate, scanning, processing]);
+
 
   const handleReset = () => {
     setScanResult(null);
