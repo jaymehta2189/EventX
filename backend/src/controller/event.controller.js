@@ -848,7 +848,7 @@ const sendReport = asyncHandler(async (req, res,next) => {
         const groupData = await cacheData.GetGroupDataById('$', ...groupId) || [];
         const groups = groupData
                         .filter(group => group.isVerified)
-                        .sort((a, b) => a.score - b.score);
+                        .sort((a, b) => b.score - a.score);
 
         return res.status(EventSuccess.EVENT_FOUND.statusCode)
             .json(new ApiResponse(EventSuccess.EVENT_FOUND, groups));
