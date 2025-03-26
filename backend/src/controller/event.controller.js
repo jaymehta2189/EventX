@@ -111,7 +111,7 @@ async function validateBranch(branchs) {
 }
 
 async function validateLimit(userLimit, girlCount) {
-    if (!Number.isInteger(userLimit) || !Number.isInteger(girlCount)) {
+    if (!Number.isInteger(userLimit) || !Number.isInteger(girlCount) || girlCount < 0) {
         throw new ApiError(EventError.INVALID_LIMIT);
     }
 
@@ -405,6 +405,7 @@ async function getActiveEventsFromCache() {
     try {
         let cursor = '0';
         let activeEvents = [];
+        let non = new Set();
         let pipeline = RedisClient.pipeline();
 
         do {
@@ -421,8 +422,9 @@ async function getActiveEventsFromCache() {
                 pipeline = RedisClient.pipeline();
 
                 ids.forEach(idResult => {
-                    if (idResult[0] === null) {
+                    if (idResult[0] === null && !non.has(idResult[1])) {
                         pipeline.call('JSON.GET', `Event:FullData:${idResult[1]}`, '$');
+                        non.add(idResult[1]);
                     }
                 });
 
@@ -549,7 +551,7 @@ async function sendEmailsForBranch(branch, branchData, csvFilePaths) {
         const mailOptions = {
             from: 'EventX',
             to: email,
-            subject: `Event Report: ${branchData.EventName}`, // ✅ Ensure event details are inside branchDetails
+            subject: `Event Report: ${branchData.EventName}`,
             text: `Please find attached the report for the event "${branchData.EventName}" held from ${branchData.StartDate} to ${branchData.EndDate}.`,
             attachments: [{ filename: `${branch}_event_data.csv`, path: filePath }]
         };
@@ -657,7 +659,7 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     groupedUsersByBranch['StartDate'] = event.startDate;
     groupedUsersByBranch['EndDate'] = event.endDate;
 
-    // Send emails to all HODs
+    // Send emails to all staff
     await sendEmailsToHODs(groupedUsersByBranch);
 
     return res
@@ -665,8 +667,7 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
         .json(new ApiResponse(EventSuccess.SEND_MAIL));
 });
 
-async function findStaff(branches) { 
-    // const authority = await ;
+async function findStaff(branches) {
     const tempData = {
         "it": ["22ituos126@ddu.ac.in","22ituos145@ddu.ac.in"],
         "ce": ["22ituos126@ddu.ac.in","22ituos145@ddu.ac.in"]
@@ -678,7 +679,7 @@ async function findStaff(branches) {
         
         BranchStaff[branch] = tempData[branch];
         
-        // BranchStaff[branch] = await cacheData.GetAuthorityDataById("$.email",...ids);;
+        // BranchStaff[branch] = await cacheData.GetAuthorityDataById("$.email",...ids);
     }
 
     return BranchStaff;
