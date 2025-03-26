@@ -71,53 +71,51 @@ async function preCacheEventJOINGroupAndUser() {
 
     try {
         do {
-            // Aggregate data for events with pagination
             eventsWithDetails = await Event.aggregate([
                 {
                     $lookup: {
-                        from: "groups", // Name of the Group collection
-                        localField: "_id", // Field in the Event collection
-                        foreignField: "event", // Field in the Group collection
-                        as: "groups", // Alias for matched data
+                        from: "groups",
+                        localField: "_id",
+                        foreignField: "event",
+                        as: "groups", 
                     },
                 },
                 {
                     $lookup: {
-                        from: "user_event_joins", // Name of the User_Event_Join collection
-                        localField: "_id", // Field in the Event collection
-                        foreignField: "Event", // Field in the User_Event_Join collection
-                        as: "userJoins", // Alias for matched data
+                        from: "user_event_joins",
+                        localField: "_id",
+                        foreignField: "Event", 
+                        as: "userJoins", 
                     },
                 },
                 {
                     $project: {
-                        eventId: "$_id", // Retain the Event ID
+                        eventId: "$_id",
                         endDate: "$endDate",
                         JoinGroupId: {
                             $map: {
                                 input: "$groups",
                                 as: "group",
-                                in: "$$group._id", // Extract only Group IDs
+                                in: "$$group._id",
                             },
                         },
                         JoinUserId: {
                             $map: {
                                 input: "$userJoins",
                                 as: "userJoin",
-                                in: "$$userJoin.Member", // Extract only User IDs
+                                in: "$$userJoin.Member",
                             },
                         },
                     },
                 },
-                { $skip: page * limit }, // Skip the already processed events
-                { $limit: limit }, // Limit to the batch size
+                { $skip: page * limit },
+                { $limit: limit }, 
             ]);
 
             if (eventsWithDetails.length === 0) {
-                break; // No more events to process
+                break; 
             }
 
-            // Process the fetched events
             eventsWithDetails.forEach(event => {
                 const groupSetKey = `Event:Join:groups:${event.eventId}`;
                 const userSetKey = `Event:Join:users:${event.eventId}`;
@@ -136,12 +134,10 @@ async function preCacheEventJOINGroupAndUser() {
                 }
             });
 
-            // Execute the current batch of operations
             await pipeline.exec();
 
-            // Increment the page number for the next batch
             page++;
-        } while (eventsWithDetails.length === limit); // Continue until all events are processed
+        } while (eventsWithDetails.length === limit);
 
     } catch (error) {
         console.error('Error caching event details:', error.message);
