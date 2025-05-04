@@ -8,7 +8,7 @@ function About() {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">About EventHub</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">About EventX</h1>
           
           <div className="mb-8">
             <img 
@@ -20,7 +20,7 @@ function About() {
 
           <div className="space-y-6 text-gray-600">
             <p>
-              EventHub is your premier destination for event management solutions. We specialize in creating, organizing, and managing events that leave lasting impressions.
+              EventX is your premier destination for event management solutions. We specialize in creating, organizing, and managing events that leave lasting impressions.
             </p>
 
             <h2 className="text-2xl font-bold text-gray-800">Our Services</h2>

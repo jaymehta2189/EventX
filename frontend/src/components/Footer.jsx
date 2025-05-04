@@ -4,7 +4,7 @@ function Footer() {
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-xl font-bold mb-4">EventHub</h3>
+              <h3 className="text-xl font-bold mb-4">EventX</h3>
               <p className="text-gray-400">Making event management easier and more accessible for everyone.</p>
             </div>
             <div>
@@ -18,9 +18,9 @@ function Footer() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Contact</h4>
               <ul className="space-y-2 text-gray-400">
-                <li>Email: info@eventhub.com</li>
-                <li>Phone: +1 234 567 890</li>
-                <li>Address: 123 Event Street</li>
+                <li>Email:Eventx@gmail.com</li>
+                <li>Phone: +91 234 567 8900</li>
+                <li>Address: DDU College Road Nadiad</li>
               </ul>
             </div>
             <div>
@@ -42,7 +42,7 @@ function Footer() {
             </div>
           </div>
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 EventHub. All rights reserved.</p>
+            <p>&copy; 2024 EventX. All rights reserved.</p>
           </div>
         </div>
       </footer>

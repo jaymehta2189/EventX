@@ -30,10 +30,21 @@ function EditProfile() {
         //   genderr=response.data.data.gender;
         // }
         setResult(response.data.data);
-        setFormData(prevData => ({
-          ...prevData,
-          name: response.data.data.name
+        if(response.data.data.gender) {
+          setFormData(prevData => ({
+            ...prevData,
+            gender: response.data.data.gender,
+            name: response.data.data.name,
         }));
+        }
+        else{
+
+          setFormData(prevData => ({
+            ...prevData,
+            name: response.data.data.name,
+  
+          }));
+        }
       } catch (error) {
         toast.error('Error fetching user data');
       }
@@ -98,7 +109,6 @@ function EditProfile() {
                 />
               </div>
 
-             
 
               {/* Gender Selection */}
               {result.setProfile ?  (
@@ -111,7 +121,7 @@ function EditProfile() {
                 </label>
                 <input
                   name="gender"
-                  value={result.gender}
+                  value={formData.gender}
                   disabled
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
                   required
