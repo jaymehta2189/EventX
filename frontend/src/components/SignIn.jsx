@@ -44,7 +44,7 @@ function SignIn() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = `${API_BASE_URL}/api/v1/auth/google`;
+    window.location.replace = `${API_BASE_URL}/api/v1/auth/google`;
   };
   
   useEffect(() => {
@@ -59,7 +59,7 @@ function SignIn() {
       Cookies.remove('token');
       
       // Show success message and navigate
-      toast.success('Google login successful!');
+      toast.success('login successful!');
       navigate('/home',{replace:true});
     }
   }, [setAuthToken, navigate]); 

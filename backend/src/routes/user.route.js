@@ -15,8 +15,9 @@ router.get("/user/:id",userController.viewUserProfile);
 router.get("/user/:id/events",checkForAuth,userController.getEvent);
 router.get("/user/:id/groups",checkForAuth,userController.getGroup);
 
+//give all creators of event
 router.get("/creator",checkForAuth,userController.getEventCreators);
-
+//give creators of branch 
 router.get("/orgs/:branch",checkForAuth,userController.getOrganizationsByBranch);
 router.get("/orgs",checkForAuth,userController.getAllOrganizations);
 
