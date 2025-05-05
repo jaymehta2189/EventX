@@ -48,6 +48,7 @@ function SignIn() {
     window.location.href = `${API_BASE_URL}/api/v1/auth/google`;
   };
   
+  
   useEffect(() => {
     const token = Cookies.get('token');
     if (token) {
