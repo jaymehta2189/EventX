@@ -44,7 +44,7 @@ function SignIn() {
   };
 
   const handleGoogleSignIn = () => {
-    window.history.pushState(null, '', '/loading');
+    window.history.pushState({}, '', '/loading');
     window.location.href = `${API_BASE_URL}/api/v1/auth/google`;
   };
   
