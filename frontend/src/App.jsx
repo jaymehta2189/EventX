@@ -1,6 +1,6 @@
 
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route,Navigate } from 'react-router-dom';
 import { AuthProvider } from './components/AuthContext';
 import AuthRedirect from './components/AuthRedirect';
 import Home from './pages/Home';
@@ -116,6 +116,9 @@ function App() {
           <PrivateRoute>
             <ScanQR/>
             </PrivateRoute>} />
+
+            <Route path="/loading" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </AuthProvider> 
