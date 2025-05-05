@@ -47,9 +47,9 @@ const GroupsPage = () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${eventId}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+            Authorization: `Bearer ${localStorage.getItem("token")}`, 
           },
-          withCredentials: true, // Ensures cookies are sent
+          withCredentials: true, 
         });
         setEventDetails(response.data.data.event);
       } catch (error) {
@@ -61,9 +61,9 @@ const GroupsPage = () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${eventId}/groups`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          withCredentials: true, // Ensures cookies are sent
+          withCredentials: true, 
         });
         const groupsWithMembers = await Promise.all(
           response.data.data.map(async (group) => {
@@ -71,9 +71,9 @@ const GroupsPage = () => {
               `${API_BASE_URL}/api/v1/groups/group/${group._id}/users`,
               {
                 headers: {
-                  Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
-                withCredentials: true, // Ensures cookies are sent
+                withCredentials: true,
               });
             return { ...group, members: membersResponse.data.data };
           })

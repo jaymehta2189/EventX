@@ -15,12 +15,11 @@ const LeaderBoard = () => {
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
-        // Replace with your actual API endpoint
         const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/leaderboard/${id}`, {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+              Authorization: `Bearer ${localStorage.getItem("token")}`, 
             },
-            withCredentials: true, // Ensures cookies are sent
+            withCredentials: true,
           });
           console.log(response.data);
           console.log(response.data.data);

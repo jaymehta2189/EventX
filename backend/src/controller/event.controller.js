@@ -568,17 +568,15 @@ async function sendEmailsForBranch(branch, branchData, csvFilePaths) {
 
 async function sendEmailsToHODs(branchData) {
     try {
-        console.log('Sending emails to HODs...');
         const csvFilePaths = await generateCSVFilesForBranches(branchData);
-        console.log('CSV files generated for all branches.');
+
         const emailPromises = [];
         for (const branch of Object.keys(branchData)) {
             if(branch === 'EventName' || branch === 'StartDate' || branch === 'EndDate') continue;
             await sendEmailsForBranch(branch, branchData, csvFilePaths);
         }
-        console.log('Emails sent to all HODs.');
+        
         // await Promise.all(emailPromises); 
-        console.log('All emails processed.');
 
         await deleteCSVFiles(csvFilePaths);
         console.log('CSV files deleted after emails sent.');
@@ -590,15 +588,12 @@ async function sendEmailsToHODs(branchData) {
 const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     const eventId = req.params.id;
     console.log("Step 1: Inside validateAndSendHODEmails",eventId);
-    // console.log
-    if (!mongoose.Types.ObjectId.isValid(eventId)) {
-        throw new ApiError(EventError.INVALID_EVENT_ID);
-    }
 
     const events = await cacheData.GetEventDataById('$', eventId); // return array
     if (events.length === 0) {
         throw new ApiError(EventError.EVENT_NOT_FOUND);
     }
+
     console.log("Step 2: Event Found",events);
     const event = events[0];
     const currentTime = moment.tz(Date.now(), "Asia/Kolkata").toDate();
@@ -606,6 +601,7 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     // if (new Date(event.endDate) > currentTime) {
     //     throw new ApiError(EventError.EVENT_NOT_END);
     // }
+
     console.log("Step 3: Event End Time",event.endDate);
     if (req.user._id !== event.creator) {
         throw new ApiError(GroupError.CREATOR_NOT_AUTHORIZED);
@@ -633,9 +629,9 @@ const validateAndSendHODEmails = asyncHandler(async (req, res) => {
     }
 
     const branches = [...new Set(users.map(user => user.branch))];
-    console.log("Step 5: Branches",branches);
+
     const BranchStaff = await findStaff(branches);
-    console.log("Step 5: Branch Staff",BranchStaff);
+
     const groupedUsersByBranch = users.reduce((result, user) => {
         const branchId = user.branch;
         if (!result[branchId]) {
@@ -877,6 +873,7 @@ module.exports = {
     getAllEventCreateByOrg,
     getLeaderBoardOfEvent,
     generateGroupReportCSV,
-    // write findHOD
+    
+
     validateAndSendHODEmails
 };

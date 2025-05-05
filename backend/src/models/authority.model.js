@@ -22,7 +22,7 @@ const authority = new Schema({
     },
     avatar: {
         type: String,
-        default:"../../public/images/profile.png"
+        default:"https://res.cloudinary.com/dlswoqzhe/image/upload/v1736455184/profile_lz6y2x.png"
     },
     salt:{
         type:String

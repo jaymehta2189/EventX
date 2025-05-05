@@ -29,15 +29,13 @@ function SignIn() {
       const response = await axios.post(`${API_BASE_URL}/api/v1/users/signin`, formData);
       const token = response.data.data;
       
-      // Update both localStorage and AuthContext
       localStorage.setItem('token', token);
-      setAuthToken(token); // This will trigger the AuthContext to update
+      setAuthToken(token); 
       
-      // Set axios default header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       toast.success('Login successful!');
-      navigate('/home');
+      navigate('/home',{replace:true});
     } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed');
     } finally {
@@ -62,9 +60,9 @@ function SignIn() {
       
       // Show success message and navigate
       toast.success('Google login successful!');
-      navigate('/home');
+      navigate('/home',{replace:true});
     }
-  }, [setAuthToken, navigate]); // Run only once on component mount
+  }, [setAuthToken, navigate]); 
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">

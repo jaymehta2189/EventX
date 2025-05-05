@@ -57,7 +57,6 @@ const fadeInUp = {
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -20 }
 };
-
 const inputClasses = "w-full px-6 py-4 pl-12 rounded-xl border-2 bg-white/50 backdrop-blur-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-300 shadow-sm hover:shadow-md";
 
 export default function CreateEventModal({ isOpen, onClose }) {
@@ -128,16 +127,15 @@ export default function CreateEventModal({ isOpen, onClose }) {
         // Append all form fields correctly
         Object.entries(formData).forEach(([key, value]) => {
             if (key === "branchs") {
-                formDataToSend.append(key, JSON.stringify(value));  // ✅ Convert array to string
+                formDataToSend.append(key, JSON.stringify(value)); 
             } else if (key === "avatar" && value instanceof File) {
                 console.log("Appending file:", value.name, value.size);
-                formDataToSend.append("avatar", value); // ✅ Correct way to append a file
+                formDataToSend.append("avatar", value); 
             } else if (key !== "avatar") {
                 formDataToSend.append(key, value);
             }
         });
 
-        // Log all form data entries before sending
         console.log("FormData contents before sending:");
         for (let pair of formDataToSend.entries()) {
             console.log(pair[0], ':', pair[1]);

@@ -9,17 +9,6 @@ function Home() {
   const [events, setEvents] = useState([]);
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   const fetchEvents = async () => {
-  //     try {
-  //       const response = await axios.get('http://localhost:4000/api/v1/events');
-  //       setEvents(response.data.data?.slice(0, 3) || []); // Only show first 3 events, handle null data
-  //     } catch (error) {
-  //       console.error('Error fetching events:', error.message);
-  //     }
-  //   };
-  //   fetchEvents();
-  // }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -37,7 +26,7 @@ function Home() {
         <div className="relative container mx-auto px-4 py-24">
           <div className="max-w-3xl">
             <h1 className="text-5xl font-bold mb-6">Discover Amazing Events Near You</h1>
-            <p className="text-xl mb-8">Join thousands of people who trust EventHub for discovering and managing their events.</p>
+            <p className="text-xl mb-8">Join people who trust EventX for discovering and managing their events.</p>
             <button
               onClick={() => navigate('/events')}
               className="bg-blue-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors"
@@ -47,47 +36,6 @@ function Home() {
           </div>
         </div>
       </div>
-
-      {/* Featured Events Section */}
-      {/* <div className="bg-gray-100 py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Featured Events</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {events.map((event) => (
-              <div key={event._id} className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105">
-                <img
-                  src={event.avatar || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
-                  alt={event.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">{event.name}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-blue-600 font-semibold">
-                      {new Date(event.startDate).toLocaleDateString()}
-                    </span>
-                    <button
-                      onClick={() => navigate(`/events/${event._id}`)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Learn More
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-12">
-            <button
-              onClick={() => navigate('/events')}
-              className="bg-blue-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors"
-            >
-              View All Events
-            </button>
-          </div>
-        </div>
-      </div> */}
 
       {/* Features Section */}
       <div className="py-16">

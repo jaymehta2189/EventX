@@ -106,15 +106,6 @@ router.get('/google/callback', async (req, res) => {
       
       console.log("abc", token);
       
-      // return res
-      //   .status(UserSuccess.LOG_IN.statusCode)
-      //   .cookie('token', token,{
-      //     httpOnly: true,  // Set to false if you need to access it in JavaScript
-      //     secure: true , // Use secure in production
-      //     sameSite: 'None', // Needed if frontend and backend are on different domains
-      //     path: '/',
-      //   })
-      //   .redirect(`${process.env.FRONTEND_URL}/home`);
       return res
     .status(UserSuccess.LOG_IN.statusCode)
     .redirect(`${process.env.FRONTEND_URL}/auth/redirect?token=${token}`);
@@ -127,7 +118,7 @@ router.get('/google/callback', async (req, res) => {
 
       const role = email.match(Authority.StaffEmailPattern) ? 'staff' : 'admin';
 
-      authority = new User({
+      authority = new Authority({
         name: profile.name,
         email,
         avatar: profile.picture,
@@ -230,7 +221,6 @@ async function getValidAccessToken(userId) {
     return { accessToken: newTokens.access_token, token: createTokenForUser(user) };
   }
 
-  console.log("ndkjvnkjdvjk");
 
   throw new ApiError(UserError.REFRESH_TOKEN_EXPIRY);
 }

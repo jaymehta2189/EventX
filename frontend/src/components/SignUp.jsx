@@ -50,6 +50,7 @@ function SignUp() {
       
         <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">Sign Up</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
+
           <div>
             <input
               type="text"
@@ -61,6 +62,7 @@ function SignUp() {
               required
             />
           </div>
+
           <div>
             <input
               type="email"
@@ -72,6 +74,7 @@ function SignUp() {
               required
             />
           </div>
+
           <div>
             <input
               type="password"
@@ -83,20 +86,7 @@ function SignUp() {
               required
             />
           </div>
-          {/* <div>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              required
-            >
-              <option value="user">User</option>
-              <option value="org">Organization</option>
-              <option value="admin">Admin</option>
-              <option value="hod">HOD</option>
-            </select>
-          </div> */}
+          
           <div className="flex gap-2">
             <input
               type="text"
@@ -115,12 +105,14 @@ function SignUp() {
               Send OTP
             </button>
           </div>
+
           <button
             type="submit"
             className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all transform hover:scale-105"
           >
             Sign Up
           </button>
+          
         </form>
         <p className="mt-6 text-center text-gray-600">
           Already have an account?{' '}

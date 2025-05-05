@@ -43,26 +43,26 @@ export default function Dashboard() {
       try {
         const userResponse = await axios.get(`${API_BASE_URL}/api/v1/users/user/${id}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          withCredentials: true, // Ensures cookies are sent
+          withCredentials: true, 
         });
         setUserDetails(userResponse.data.data)
 
         const eventsResponse = await axios.get(`${API_BASE_URL}/api/v1/users/user/${id}/groups`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+            Authorization: `Bearer ${localStorage.getItem("token")}`, 
           },
-          withCredentials: true, // Ensures cookies are sent
+          withCredentials: true, 
         });
         setEvents(eventsResponse.data.data)
 
         if (userResponse.data.data.role === "org") {
           const createdEventsResponse = await axios.get(`${API_BASE_URL}/api/v1/events/org/${id}`, {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+              Authorization: `Bearer ${localStorage.getItem("token")}`, 
             },
-            withCredentials: true, // Ensures cookies are sent
+            withCredentials: true,
           });
           setCreatedEvents(createdEventsResponse.data.data || [])
         }
@@ -73,9 +73,9 @@ export default function Dashboard() {
           if (userResponse.data.data.role === "org") {
             const createdEventsResponse = await axios.get(`${API_BASE_URL}/api/v1/events/org/${id}`, {
               headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
-              withCredentials: true, // Ensures cookies are sent
+              withCredentials: true,
             });
             setCreatedEvents(createdEventsResponse.data.data || [])
           }
@@ -94,9 +94,9 @@ export default function Dashboard() {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/v1/events/event/${eventId}/groups`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        withCredentials: true, // Ensures cookies are sent
+        withCredentials: true, 
       });
       setSelectedEventGroups({ eventId, groups: response.data.data })
     } catch (error) {
@@ -108,9 +108,9 @@ export default function Dashboard() {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/v1/groups/group/${groupId}/users`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Send Authorization token separately
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        withCredentials: true, // Ensures cookies are sent
+        withCredentials: true, 
       });
       console.log("api called ");
       setSelectedGroupMembers(response.data.data)

@@ -397,9 +397,9 @@ const getGroup = asyncHandler(async (req, res) => {
         const groupIds = await cacheData.GetGroupIdsByUserId(req.params.id);
         let groups = await cacheData.GetGroupDataById('$', ...groupIds);
 
-        if (!groups.length) {
-            throw new ApiError(UserError.GROUP_NOT_FOUND);
-        }
+        // if (!groups.length) {
+        //     throw new ApiError(UserError.GROUP_NOT_FOUND);
+        // }
 
         const eventIds = groups.map(group => group.event);
 
